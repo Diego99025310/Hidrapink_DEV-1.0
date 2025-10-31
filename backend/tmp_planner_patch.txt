@@ -1,0 +1,181 @@
+const normalizePlanEntriesPayload = async (body, cycle, influencerId) => {
+  if (!cycle) {
+    return { error: "Ciclo mensal nao encontrado." };
+  }
+
+  const candidateArrays = [
+    body?.entries,
+    body?.schedules,
+    body?.agendamentos,
+    body?.days,
+    body?.dates,
+  ];
+
+  const removalSources = [
+    body?.removedScripts,
+    body?.removedScriptIds,
+    body?.removed_ids,
+    body?.removed,
+    body?.removals,
+  ];
+  const removedScriptsSet = new Set();
+  removalSources.forEach((source) => {
+    if (Array.isArray(source)) {
+      source.forEach((value) => {
+        const parsed = Number(value);
+        if (Number.isInteger(parsed) && parsed > 0) {
+          removedScriptsSet.add(parsed);
+        }
+      });
+    } else if (source != null && source !== "") {
+      const parsed = Number(source);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        removedScriptsSet.add(parsed);
+      }
+    }
+  });
+
+  const removedPlanSources = [
+    body?.removedPlans,
+    body?.removedPlanIds,
+    body?.removedOccurrences,
+    body?.removed_occurrences,
+  ];
+  const removedPlanIdsSet = new Set();
+  removedPlanSources.forEach((source) => {
+    if (Array.isArray(source)) {
+      source.forEach((value) => {
+        const parsed = Number(value);
+        if (Number.isInteger(parsed) && parsed > 0) {
+          removedPlanIdsSet.add(parsed);
+        }
+      });
+    } else if (source != null && source !== "") {
+      const parsed = Number(source);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        removedPlanIdsSet.add(parsed);
+      }
+    }
+  });
+
+  const candidates = candidateArrays.find((value) => Array.isArray(value)) || [];
+
+  if (!candidates.length && removedScriptsSet.size === 0 && removedPlanIdsSet.size === 0) {
+    return { error: "Informe ao menos um dia para agendar." };
+  }
+
+  const cycleYear = Number(cycle.cycleYear ?? cycle.cycle_year);
+  const cycleMonth = String(cycle.cycleMonth ?? cycle.cycle_month).padStart(2, "0");
+  const expectedPrefix = `${cycleYear}-${cycleMonth}-`;
+
+  const result = [];
+  const seenPairs = new Set();
+  const seenPlanIds = new Set();
+
+  const existingPlansData = await fetchExistingPlansMap(cycle.id, influencerId, prisma);
+  const scriptCache = new Map();
+
+  const getScriptById = async (id) => {
+    if (scriptCache.has(id)) {
+      return scriptCache.get(id);
+    }
+    const script = await prisma.contentScript.findUnique({ where: { id } });
+    scriptCache.set(id, script ?? null);
+    return script;
+  };
+
+  for (const rawEntry of candidates) {
+    let dateValue = null;
+    let scriptId = null;
+    let notes = null;
+    let planId = null;
+    let append = false;
+
+    if (typeof rawEntry === "string") {
+      dateValue = rawEntry;
+    } else if (rawEntry && typeof rawEntry === "object") {
+      dateValue =
+        rawEntry.date ?? rawEntry.day ?? rawEntry.scheduled_date ?? rawEntry.scheduledDate ?? rawEntry.data;
+      scriptId =
+        rawEntry.scriptId ??
+        rawEntry.contentScriptId ??
+        rawEntry.content_script_id ??
+        rawEntry.roteiro_id ??
+        rawEntry.roteiroId ??
+        rawEntry.script?.id ??
+        rawEntry.roteiro?.id ??
+        null;
+      notes = trimString(rawEntry.notes ?? rawEntry.observacao ?? rawEntry.obs ?? rawEntry.annotation ?? "") || null;
+      planId = rawEntry.id ?? rawEntry.planId ?? rawEntry.plan_id ?? null;
+      append =
+        parseBooleanFlag(rawEntry.append ?? rawEntry.add ?? rawEntry.create ?? rawEntry.novo) ||
+        parseBooleanFlag(rawEntry.action ?? rawEntry.acao);
+    }
+
+    if (typeof dateValue !== "string" || !isValidDate(dateValue)) {
+      continue;
+    }
+
+    const normalizedDate = dateValue.trim();
+    if (!normalizedDate.startsWith(expectedPrefix)) {
+      continue;
+    }
+
+    let numericPlanId = null;
+    if (planId != null && planId !== "") {
+      const parsedPlan = Number(planId);
+      if (Number.isInteger(parsedPlan) && parsedPlan > 0) {
+        numericPlanId = parsedPlan;
+        if (seenPlanIds.has(numericPlanId)) {
+          continue;
+        }
+        seenPlanIds.add(numericPlanId);
+      }
+    }
+
+    let contentScriptId = null;
+    if (scriptId != null && scriptId !== "") {
+      const parsed = Number(scriptId);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        const script = await getScriptById(parsed);
+        if (script) {
+          contentScriptId = parsed;
+        }
+      }
+    }
+
+    if (!contentScriptId && numericPlanId) {
+      const existing = existingPlansData.map.get(numericPlanId);
+      if (existing?.contentScriptId) {
+        contentScriptId = existing.contentScriptId;
+      }
+    }
+
+    const pairKey = `${contentScriptId ?? "null"}|${normalizedDate}`;
+    if (!numericPlanId && seenPairs.has(pairKey)) {
+      continue;
+    }
+    seenPairs.add(pairKey);
+
+    result.push({
+      id: numericPlanId,
+      scheduled_date: normalizedDate,
+      content_script_id: contentScriptId,
+      notes,
+      append: Boolean(append),
+    });
+  }
+
+  if (!result.length && removedScriptsSet.size === 0 && removedPlanIdsSet.size === 0) {
+    return { error: "Nao foi possivel identificar dias validos para o agendamento." };
+  }
+
+  result.sort((a, b) => a.scheduled_date.localeCompare(b.scheduled_date));
+
+  return {
+    entries: result,
+    removedScriptIds: Array.from(removedScriptsSet),
+    removedPlanIds: Array.from(removedPlanIdsSet),
+    existingPlansData,
+  };
+};

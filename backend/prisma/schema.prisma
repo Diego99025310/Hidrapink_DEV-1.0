@@ -1,0 +1,267 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 Int      @id @default(autoincrement())
+  email              String   @unique
+  phone              String?  @unique
+  phoneNormalized    String?  @unique @map("phone_normalized")
+  passwordHash       String   @map("password_hash")
+  role               UserRole @default(master)
+  mustChangePassword Boolean  @default(true) @map("must_change_password")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  influencer       Influencer?       @relation("InfluencerUser")
+  termAcceptances  TermAcceptance[]
+  validatedStories StorySubmission[] @relation("StorySubmissionValidator")
+  contentScripts   ContentScript[]   @relation("ContentScriptCreator")
+
+  @@map("users")
+}
+
+enum UserRole {
+  master
+  influencer
+}
+
+enum CycleStatus {
+  open
+  closed
+}
+
+enum PlanStatus {
+  scheduled
+  posted
+  validated
+  missed
+}
+
+enum SaleStatus {
+  pending
+  approved
+  rejected
+}
+
+enum SubmissionStatus {
+  pending
+  approved
+  rejected
+}
+
+model Influencer {
+  id                               Int       @id @default(autoincrement())
+  name                             String    @map("nome")
+  instagram                        String    @unique
+  cpf                              String?   @unique
+  email                            String?   @unique
+  contact                          String?   @unique @map("contato")
+  coupon                           String?   @unique @map("cupom")
+  salesQuantity                    Int       @default(0) @map("vendas_quantidade")
+  salesValue                       Decimal   @default("0") @map("vendas_valor") @db.Decimal(12, 2)
+  cep                              String?
+  numero                           String?
+  complemento                      String?
+  logradouro                       String?
+  bairro                           String?
+  cidade                           String?
+  estado                           String?
+  commissionRate                   Decimal   @default("0") @map("commission_rate") @db.Decimal(7, 4)
+  contractSignatureCodeHash        String?   @map("contract_signature_code_hash")
+  contractSignatureCodeGeneratedAt DateTime? @map("contract_signature_code_generated_at")
+  contractSignatureWaived          Boolean   @default(false) @map("contract_signature_waived")
+  userId                           Int?      @unique @map("user_id")
+  createdAt                        DateTime  @default(now()) @map("created_at")
+
+  user               User?               @relation("InfluencerUser", fields: [userId], references: [id])
+  sales              Sale[]
+  plans              InfluencerPlan[]
+  storySubmissions   StorySubmission[]
+  monthlyCommissions MonthlyCommission[]
+
+  @@map("influenciadoras")
+}
+
+model Sale {
+  id           Int      @id @default(autoincrement())
+  influencerId Int      @map("influencer_id")
+  orderNumber  String?  @unique @map("order_number")
+  date         DateTime @map("date")
+  cycleId      Int?     @map("cycle_id")
+  grossValue   Decimal  @map("gross_value") @db.Decimal(12, 2)
+  discount     Decimal  @map("discount") @db.Decimal(12, 2)
+  netValue     Decimal  @map("net_value") @db.Decimal(12, 2)
+  commission   Decimal  @map("commission") @db.Decimal(12, 2)
+  points       Int      @default(0)
+  status       SaleStatus @default(pending)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  influencer Influencer     @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  cycle      MonthlyCycle?  @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  items      SaleSkuPoint[]
+
+  @@index([influencerId], name: "idx_sales_influencer")
+  @@index([cycleId], name: "idx_sales_cycle")
+  @@map("sales")
+}
+
+model SaleSkuPoint {
+  id            Int      @id @default(autoincrement())
+  saleId        Int      @map("sale_id")
+  sku           String
+  quantity      Int      @default(0)
+  pointsPerUnit Int      @default(0) @map("points_per_unit")
+  points        Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId], name: "idx_sale_sku_points_sale_id")
+  @@map("sale_sku_points")
+}
+
+model SkuPoint {
+  id            Int      @id @default(autoincrement())
+  sku           String   @unique
+  description   String?
+  pointsPerUnit Int      @default(0) @map("points_per_unit")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+
+  @@map("sku_points")
+}
+
+model TermAcceptance {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  termVersion String   @map("versao_termo")
+  termHash    String   @map("hash_termo")
+  acceptedAt  DateTime @map("data_aceite")
+  userIp      String?  @map("ip_usuario")
+  userAgent   String?  @map("user_agent")
+  authChannel String?  @default("token_email") @map("canal_autenticacao")
+  status      String?  @default("aceito")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "idx_aceite_termos_user")
+  @@map("aceite_termos")
+}
+
+model ContentScript {
+  id          Int      @id @default(autoincrement())
+  title       String   @map("titulo")
+  duration    String   @map("duracao")
+  context     String   @map("contexto")
+  task        String   @map("tarefa")
+  keyPoints   String   @map("pontos_importantes")
+  closing     String   @map("finalizacao")
+  notes       String   @map("notas_adicionais")
+  description String   @map("descricao")
+  videoUrl    String?  @map("video_url")
+  videoFormat String?  @map("video_format")
+  createdById Int?     @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  createdBy User?            @relation("ContentScriptCreator", fields: [createdById], references: [id])
+  plans     InfluencerPlan[]
+
+  @@index([createdAt(sort: Desc)], name: "idx_content_scripts_created_at")
+  @@map("content_scripts")
+}
+
+model MonthlyCycle {
+  id         Int         @id @default(autoincrement())
+  cycleYear  Int         @map("cycle_year")
+  cycleMonth Int         @map("cycle_month")
+  status     CycleStatus @default(open)
+  startedAt  DateTime    @default(now()) @map("started_at")
+  closedAt   DateTime?   @map("closed_at")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @default(now()) @map("updated_at")
+
+  sales             Sale[]
+  plans              InfluencerPlan[]
+  storySubmissions   StorySubmission[]
+  monthlyCommissions MonthlyCommission[]
+
+  @@unique([cycleYear, cycleMonth], map: "uniq_monthly_cycles_year_month")
+  @@index([status, cycleYear(sort: Desc), cycleMonth(sort: Desc)], name: "idx_monthly_cycles_status")
+  @@map("monthly_cycles")
+}
+
+model InfluencerPlan {
+  id              Int        @id @default(autoincrement())
+  cycleId         Int        @map("cycle_id")
+  influencerId    Int        @map("influencer_id")
+  scheduledDate   DateTime   @map("scheduled_date")
+  contentScriptId Int?       @map("content_script_id")
+  notes           String?
+  status          PlanStatus @default(scheduled)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @default(now()) @map("updated_at")
+
+  cycle         MonthlyCycle     @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  influencer    Influencer       @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  contentScript ContentScript?   @relation(fields: [contentScriptId], references: [id])
+  submission    StorySubmission? @relation("PlanSubmission")
+
+  @@unique([cycleId, influencerId, scheduledDate], map: "uniq_influencer_plans_cycle_influencer_date")
+  @@index([influencerId, scheduledDate], name: "idx_influencer_plans_influencer")
+  @@map("influencer_plans")
+}
+
+model StorySubmission {
+  id              Int              @id @default(autoincrement())
+  cycleId         Int              @map("cycle_id")
+  influencerId    Int              @map("influencer_id")
+  planId          Int?             @map("plan_id")
+  scheduledDate   DateTime         @map("scheduled_date")
+  status          SubmissionStatus @default(pending)
+  validationType  String?          @map("validation_type")
+  autoDetected    Boolean          @default(false) @map("auto_detected")
+  proofUrl        String?          @map("proof_url")
+  proofNotes      String?          @map("proof_notes")
+  submittedAt     DateTime         @default(now()) @map("submitted_at")
+  validatedAt     DateTime?        @map("validated_at")
+  validatedById   Int?             @map("validated_by")
+  rejectionReason String?          @map("rejection_reason")
+
+  cycle       MonthlyCycle    @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  influencer  Influencer      @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  plan        InfluencerPlan? @relation("PlanSubmission", fields: [planId], references: [id])
+  validatedBy User?           @relation("StorySubmissionValidator", fields: [validatedById], references: [id])
+
+  @@unique([planId], map: "uniq_story_submissions_plan")
+  @@index([cycleId, status, scheduledDate], name: "idx_story_submissions_cycle_status")
+  @@map("story_submissions")
+}
+
+model MonthlyCommission {
+  id                  Int       @id @default(autoincrement())
+  cycleId             Int       @map("cycle_id")
+  influencerId        Int       @map("influencer_id")
+  validatedDays       Int       @default(0) @map("validated_days")
+  multiplier          Decimal   @default("0") @db.Decimal(10, 4)
+  baseCommission      Decimal   @default("0") @map("base_commission") @db.Decimal(12, 2)
+  totalCommission     Decimal   @default("0") @map("total_commission") @db.Decimal(12, 2)
+  basePoints          Int       @default(0) @map("base_points")
+  totalPoints         Int       @default(0) @map("total_points")
+  deliveriesPlanned   Int       @default(0) @map("deliveries_planned")
+  deliveriesCompleted Int       @default(0) @map("deliveries_completed")
+  validationSummary   String?   @map("validation_summary")
+  closedAt            DateTime? @map("closed_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  cycle      MonthlyCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  influencer Influencer   @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@map("monthly_commissions")
+}

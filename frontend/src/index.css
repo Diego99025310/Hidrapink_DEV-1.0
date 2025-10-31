@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-950 font-sans text-white;
+}
+
+.loading-screen {
+  @apply flex min-h-screen items-center justify-center bg-slate-950 text-white text-sm;
+}

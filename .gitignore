@@ -1,0 +1,17 @@
+# Node
+node_modules/
+.env
+*.log
+
+# Build
+dist/
+build/
+
+# Prisma
+backend/prisma/dev.db
+backend/prisma/dev.sqlite
+backend/prisma/migrations/
+
+# Sistema
+.DS_Store
+.vscode/
