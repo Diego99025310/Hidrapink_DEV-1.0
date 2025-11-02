@@ -1,131 +1,164 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { api } from "../lib/api.js";
-import termoHtml from "../assets/termo-parceria.html?raw";
+import Modal from "../components/Modal.jsx";
 
-const sanitizeCode = (value) => value.replace(/\D/g, "").slice(0, 6);
+const formatCpf = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  const parts = [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9), digits.slice(9)];
+  if (digits.length <= 3) return parts[0];
+  if (digits.length <= 6) return `${parts[0]}.${parts[1]}`;
+  if (digits.length <= 9) return `${parts[0]}.${parts[1]}.${parts[2]}`;
+  return `${parts[0]}.${parts[1]}.${parts[2]}-${parts[3]}`;
+};
 
-export default function TermsPage() {
-  const { user } = useAuth();
-  const outletContext = useOutletContext() || {};
+const formatPhone = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  const area = digits.slice(0, 2);
+  if (digits.length <= 7) {
+    return `(${area}) ${digits.slice(2)}`;
+  }
+  if (digits.length <= 10) {
+    const middle = digits.slice(2, digits.length - 4);
+    const end = digits.slice(-4);
+    return `(${area}) ${middle}-${end}`;
+  }
+  const middle = digits.slice(2, 7);
+  const end = digits.slice(7);
+  return `(${area}) ${middle}-${end}`;
+};
+
+const digitsLength = (value) => value.replace(/\D/g, "").length;
+
+export default function TermsAcceptancePage() {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
-  const [accepted, setAccepted] = useState(false);
-  const [dispensed, setDispensed] = useState(false);
-  const [checkbox, setCheckbox] = useState(false);
-  const [codeEnabled, setCodeEnabled] = useState(false);
-  const [code, setCode] = useState("");
-  const [message, setMessage] = useState(null);
+  const [contract, setContract] = useState({ html: "", hash: "", version: "" });
+  const [status, setStatus] = useState({ accepted: false, waived: false, fetched: false });
+  const [cpf, setCpf] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+
+  const canSubmit = useMemo(() => {
+    if (!agree) return false;
+    if (digitsLength(cpf) !== 11) return false;
+    if (digitsLength(telefone) !== 11) return false;
+    return true;
+  }, [agree, cpf, telefone]);
 
   useEffect(() => {
-    const loadStatus = async () => {
+    const loadData = async () => {
+      if (!user || user.role !== "influencer") {
+        setLoading(false);
+        return;
+      }
       try {
-        const { data } = await api.get("/api/verificar-aceite");
-        const dispensa = Boolean(data?.dispensado);
-        const aceite = Boolean(data?.aceito);
-        setAccepted(aceite || dispensa);
-        setDispensed(dispensa);
-        if (aceite || dispensa) {
+        const { data: statusData } = await api.get("/api/aceite/status");
+        const accepted = Boolean(statusData?.waived || statusData?.accepted);
+        setStatus({
+          accepted,
+          waived: Boolean(statusData?.waived),
+          fetched: true,
+        });
+
+        if (accepted) {
           setMessage({
             type: "success",
-            text: "Termo de parceria já aceito. Você pode acessar o painel normalmente.",
+            text: statusData?.waived
+              ? "Seu acesso foi liberado pelo administrador. Voce pode usar o painel normalmente."
+              : "Termo de parceria aceito. Voce pode utilizar o painel normalmente.",
           });
+          return;
         }
-      } catch (error) {
-        if (error.response?.status === 428) {
-          setAccepted(false);
-        } else if (error.response?.status === 401) {
+
+        const { data: contractData } = await api.get("/api/aceite/termo");
+        setContract({
+          html: contractData?.html ?? "",
+          hash: contractData?.hash ?? "",
+          version: contractData?.version ?? "",
+        });
+      } catch (requestError) {
+        if (requestError.response?.status === 428 && requestError.response?.data?.waived) {
+          setStatus({ accepted: true, waived: true, fetched: true });
           setMessage({
-            type: "error",
-            text: "Sessão expirada. Faça login novamente para continuar.",
+            type: "success",
+            text: "Dispensa registrada. Voce pode acessar o painel normalmente.",
           });
+        } else if (requestError.response?.status === 401) {
+          setError("Sessao expirada. Faca login novamente para continuar.");
         } else {
-          setMessage({
-            type: "error",
-            text:
-              error.response?.data?.error ||
-              "Nao foi possivel verificar o status do termo de parceria.",
-          });
+          setError(
+            requestError.response?.data?.error ||
+              "Nao foi possivel carregar o termo. Tente novamente ou contate o suporte.",
+          );
         }
       } finally {
         setLoading(false);
       }
     };
 
-    if (user?.role === "influencer") {
-      loadStatus();
-    } else {
-      setLoading(false);
-    }
-  }, [user?.role]);
+    loadData();
+  }, [user]);
 
-  const handleRequestCode = async () => {
+  const handleConfirm = async () => {
+    if (!canSubmit || submitting) return;
     setSubmitting(true);
     setMessage(null);
+    setError(null);
     try {
-      const { data } = await api.post("/api/enviar-token", {});
-      setCodeEnabled(true);
+      const { data } = await api.post("/api/aceite/confirmar", {
+        cpf,
+        telefone,
+      });
+      setStatus({ accepted: true, waived: false, fetched: true });
       setMessage({
         type: "success",
-        text:
-          data?.message ||
-          "Código validado pela equipe HidraPink. Insira o código de 6 dígitos informado para concluir.",
+        text: data?.message || "Aceite confirmado com sucesso. Redirecionando para o dashboard...",
       });
-    } catch (error) {
-      if (error.response?.status === 200) {
-        setMessage({
-          type: "success",
-          text: error.response?.data?.message || "Termo já aceito anteriormente.",
-        });
-        setAccepted(true);
-        outletContext.refreshTerms?.();
+      setTimeout(() => {
         navigate("/dashboard", { replace: true });
-        return;
-      }
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.error ||
-          "Nao foi possivel validar sua elegibilidade. Contate a equipe HidraPink.",
-      });
+      }, 1200);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.error ||
+          "Nao foi possivel confirmar o aceite. Verifique os dados e tente novamente.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleValidateCode = async () => {
-    const sanitized = sanitizeCode(code);
-    if (sanitized.length !== 6) {
-      setMessage({
-        type: "error",
-        text: "Informe o código de assinatura com 6 dígitos.",
-      });
-      return;
-    }
-
+  const handleReject = async () => {
     setSubmitting(true);
-    setMessage(null);
+    setError(null);
     try {
-      const { data } = await api.post("/api/validar-token", { codigo: sanitized });
-      setAccepted(true);
+      const { data } = await api.post("/api/aceite/rejeitar");
+      setShowRejectModal(false);
       setMessage({
-        type: "success",
-        text: data?.message || "Termo aceito com sucesso! Redirecionando...",
-      });
-      outletContext.refreshTerms?.();
-      setTimeout(() => {
-        navigate("/dashboard", { replace: true });
-      }, 1200);
-    } catch (error) {
-      setMessage({
-        type: "error",
+        type: "info",
         text:
-          error.response?.data?.error ||
-          "Nao foi possivel validar o código informado. Verifique e tente novamente.",
+          data?.message ||
+          "Recusa registrada. Voce sera desconectada e nao podera usar o painel enquanto nao aceitar o termo.",
       });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      logout();
+      navigate("/login", { replace: true });
+    } catch (requestError) {
+      setShowRejectModal(false);
+      setError(
+        requestError.response?.data?.error ||
+          "Nao foi possivel registrar a recusa. Tente novamente ou contate o suporte.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -138,34 +171,27 @@ export default function TermsPage() {
   if (user.role !== "influencer") {
     return (
       <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center text-sm text-white/70">
-        O fluxo de aceite está disponível apenas para influenciadoras. Acesse o dashboard para
-        gerenciar as operações.
+        O fluxo de aceite de termo e exclusivo para influenciadoras.
       </div>
     );
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
-          <p className="text-xs uppercase tracking-[0.35em] text-white/60">
-            Carregando termo de parceria
-          </p>
-        </div>
-      </div>
-    );
+    return <div className="loading-screen">Carregando termo...</div>;
   }
 
   return (
     <div className="space-y-8">
       <header className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
-        <p className="text-xs uppercase tracking-[0.35em] text-white/40">
-          Termo de Parceria HidraPink
-        </p>
+        <p className="text-xs uppercase tracking-[0.35em] text-white/40">Termo de parceria</p>
         <h1 className="mt-3 text-2xl font-semibold text-white">
-          Leia o termo com atenção e confirme com o código de assinatura
+          Leia com atencao e confirme seus dados para assinar
         </h1>
+        {contract.version ? (
+          <p className="text-xs uppercase tracking-[0.25em] text-white/40">
+            Versao vigente: {contract.version}
+          </p>
+        ) : null}
       </header>
 
       {message ? (
@@ -173,70 +199,131 @@ export default function TermsPage() {
           className={`rounded-2xl border px-4 py-3 text-sm ${
             message.type === "success"
               ? "border-emerald-300/40 bg-emerald-500/15 text-emerald-100"
-              : "border-rose-300/40 bg-rose-500/10 text-rose-100"
+              : "border-sky-300/40 bg-sky-500/10 text-sky-100"
           }`}
         >
           {message.text}
         </div>
       ) : null}
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
-        <div className="max-h-[60vh] overflow-y-auto rounded-2xl border border-white/10 bg-white/95 p-6 text-slate-900 shadow-inner">
-          <div dangerouslySetInnerHTML={{ __html: termoHtml }} />
+      {error ? (
+        <div className="rounded-2xl border border-rose-300/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          {error}
         </div>
-        <label className="mt-6 flex items-start gap-3 text-sm text-white/80">
-          <input
-            type="checkbox"
-            checked={checkbox}
-            onChange={(event) => setCheckbox(event.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950/40"
-            disabled={accepted || dispensed}
-          />
-          <span>
-            Confirmo que li integralmente o termo acima e estou ciente das regras de parceria com a
-            HidraPink.
-          </span>
-        </label>
+      ) : null}
 
-        {!accepted && !dispensed ? (
-          <div className="mt-6 flex flex-wrap items-center gap-4">
+      {!status.accepted ? (
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
+          <div className="max-h-[60vh] overflow-y-auto rounded-2xl border border-white/10 bg-white/95 p-6 text-slate-900 shadow-inner">
+            {contract.html ? (
+              <div dangerouslySetInnerHTML={{ __html: contract.html }} />
+            ) : (
+              <p className="text-sm text-slate-600">
+                Termo ainda nao disponivel. Recarregue a pagina em instantes.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-sm text-white/80">
+            <label className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                checked={agree}
+                onChange={(event) => setAgree(event.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-950/60"
+              />
+              <span>
+                Confirmo que li e concordo com o contrato acima. Os dados abaixo serao validados
+                exatamente como cadastrados.
+              </span>
+            </label>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="text-xs uppercase tracking-[0.35em] text-white/50" htmlFor="cpf">
+                  CPF
+                </label>
+                <input
+                  id="cpf"
+                  name="cpf"
+                  value={cpf}
+                  onChange={(event) => setCpf(formatCpf(event.target.value))}
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                  className="mt-2 w-full rounded-2xl border border-white/15 bg-slate-950/60 px-4 py-3 text-sm text-white shadow-inner focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-400/40"
+                  disabled={submitting}
+                />
+              </div>
+
+              <div>
+                <label
+                  className="text-xs uppercase tracking-[0.35em] text-white/50"
+                  htmlFor="telefone"
+                >
+                  Telefone
+                </label>
+                <input
+                  id="telefone"
+                  name="telefone"
+                  value={telefone}
+                  onChange={(event) => setTelefone(formatPhone(event.target.value))}
+                  inputMode="tel"
+                  placeholder="(00) 00000-0000"
+                  className="mt-2 w-full rounded-2xl border border-white/15 bg-slate-950/60 px-4 py-3 text-sm text-white shadow-inner focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-400/40"
+                  disabled={submitting}
+                />
+              </div>
+            </div>
+
+            {contract.hash ? (
+              <p className="text-xs text-white/50">
+                Hash de integridade (SHA-256): <span className="break-all">{contract.hash}</span>
+              </p>
+            ) : null}
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-4">
             <button
               type="button"
-              onClick={handleRequestCode}
-              disabled={!checkbox || submitting}
-              className="rounded-full bg-gradient-to-r from-pink-500 via-pink-400 to-pink-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg transition hover:from-pink-400 hover:to-pink-400 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={handleConfirm}
+              disabled={!canSubmit || submitting}
+              className="rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg transition hover:from-emerald-400 hover:to-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "Processando..." : "Validar elegibilidade"}
+              {submitting ? "Processando..." : "Confirmar e assinar"}
             </button>
-
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="\d*"
-                placeholder="Código de assinatura"
-                value={code}
-                onChange={(event) => setCode(sanitizeCode(event.target.value))}
-                disabled={!codeEnabled || submitting}
-                className="w-48 rounded-2xl border border-white/15 bg-slate-950/60 px-3 py-2 text-center text-sm text-white shadow-inner focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-400/40"
-              />
-              <button
-                type="button"
-                onClick={handleValidateCode}
-                disabled={!codeEnabled || submitting || code.length !== 6}
-                className="rounded-full border border-emerald-300/40 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-100 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Confirmar código
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowRejectModal(true)}
+              disabled={submitting}
+              className="rounded-full border border-rose-300/40 px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-rose-100 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Recusar e sair
+            </button>
           </div>
-        ) : (
-          <p className="mt-6 rounded-2xl border border-emerald-300/40 bg-emerald-500/15 px-4 py-3 text-sm text-emerald-100">
-            Parabéns! O termo está regularizado. Você já pode utilizar todos os recursos do painel
-            HidraPink.
-          </p>
-        )}
-      </section>
+        </section>
+      ) : null}
+
+      <Modal
+        isOpen={showRejectModal}
+        onClose={() => {
+          if (!submitting) {
+            setShowRejectModal(false);
+          }
+        }}
+        title="Recusar termo de parceria"
+        description="Voce sera desconectada e nao podera utilizar o painel enquanto nao aceitar o termo vigente."
+        secondaryAction={{
+          label: "Cancelar",
+          onClick: () => setShowRejectModal(false),
+        }}
+        primaryAction={{
+          label: "Confirmar recusa",
+          onClick: handleReject,
+          disabled: submitting,
+          loading: submitting,
+          loadingLabel: "Registrando...",
+        }}
+      />
     </div>
   );
 }
