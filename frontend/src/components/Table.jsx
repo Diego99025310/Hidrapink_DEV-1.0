@@ -5,28 +5,28 @@ export default function Table({
   emptyMessage = "Nenhum registro encontrado.",
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 shadow-lg">
+    <div className="overflow-hidden rounded-3xl border border-brand-light bg-white/90 shadow-brand-soft">
       <div className="relative overflow-x-auto">
-        <table className="min-w-full divide-y divide-white/10 text-sm text-white/80">
-          <thead className="bg-white/5 text-xs uppercase tracking-wider text-white/60">
+        <table className="min-w-full divide-y divide-brand-light/60 text-sm text-ink">
+          <thead className="bg-brand-light/60 text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-brand">
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.key || column.label}
                   scope="col"
-                  className="px-4 py-3 text-left font-semibold"
+                  className="px-4 py-3 text-left"
                 >
                   {column.label}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-brand-light/40">
             {loading ? (
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-6 text-center text-sm text-white/60"
+                  className="px-4 py-6 text-center text-sm text-ink/60"
                 >
                   Carregando...
                 </td>
@@ -35,7 +35,7 @@ export default function Table({
               data.map((row, index) => (
                 <tr
                   key={row.id ?? index}
-                  className="hover:bg-white/5 transition"
+                  className="transition hover:bg-brand-light/40"
                 >
                   {columns.map((column) => (
                     <td key={column.key || column.label} className="px-4 py-4 align-top">
@@ -48,7 +48,7 @@ export default function Table({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-6 text-center text-sm text-white/50"
+                  className="px-4 py-6 text-center text-sm text-ink/60"
                 >
                   {emptyMessage}
                 </td>

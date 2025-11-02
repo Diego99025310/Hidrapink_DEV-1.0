@@ -3,9 +3,16 @@
 @tailwind utilities;
 
 body {
-  @apply bg-slate-950 font-sans text-white;
+  @apply font-body text-ink antialiased;
+  background-color: rgba(251, 211, 219, 0.75);
+  background-image: linear-gradient(
+    135deg,
+    rgba(251, 211, 219, 0.92) 0%,
+    rgba(255, 255, 255, 0.95) 55%,
+    rgba(240, 121, 153, 0.35) 100%
+  );
 }
 
 .loading-screen {
-  @apply flex min-h-screen items-center justify-center bg-slate-950 text-white text-sm;
+  @apply flex min-h-screen items-center justify-center bg-white/80 text-sm text-ink;
 }
