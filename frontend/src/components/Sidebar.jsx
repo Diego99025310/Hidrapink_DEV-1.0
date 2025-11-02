@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const navItemStyle =
-  "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition";
+  "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition";
 
 const baseItems = [
   {
@@ -134,17 +134,19 @@ export default function Sidebar({ open, onNavigate }) {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-30 w-72 transform border-r border-white/10 bg-slate-950/80 backdrop-blur transition-transform md:translate-x-0 ${
+      className={`fixed inset-y-0 left-0 z-30 w-72 transform border-r border-brand-light bg-white/80 text-ink shadow-lg backdrop-blur transition-transform md:translate-x-0 ${
         open ? "translate-x-0" : "-translate-x-full md:-translate-x-0"
       }`}
     >
-      <div className="flex h-20 items-center border-b border-white/10 px-6">
-        <div>
-          <p className="text-xs uppercase tracking-[0.32em] text-pink-200">HidraPink</p>
-          <p className="text-lg font-semibold text-white">Influence Manager</p>
+      <div className="flex h-20 items-center border-b border-brand-light/70 px-6">
+        <div className="space-y-1">
+          <span className="inline-flex items-center gap-2 rounded-full bg-brand-light px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.32em] text-brand">
+            HidraPink
+          </span>
+          <p className="font-display text-xl text-brand">Influence Manager</p>
         </div>
       </div>
-      <nav className="space-y-1 px-4 py-6">
+      <nav className="space-y-2 px-4 py-6">
         {items.map((item) => {
           const active = location.pathname === item.to;
           return (
@@ -154,11 +156,15 @@ export default function Sidebar({ open, onNavigate }) {
               onClick={() => onNavigate?.()}
               className={`${navItemStyle} ${
                 active
-                  ? "bg-white/15 text-white shadow"
-                  : "text-white/60 hover:bg-white/10 hover:text-white"
+                  ? "bg-gradient-to-r from-brand/10 via-white to-brand-light text-brand shadow-brand-soft"
+                  : "text-ink/70 hover:bg-brand-light/60 hover:text-brand"
               }`}
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white">
+              <span className={`flex h-9 w-9 items-center justify-center rounded-full border ${
+                active
+                  ? "border-brand/40 bg-white text-brand"
+                  : "border-brand-light bg-white/80 text-brand"
+              }`}>
                 {item.icon}
               </span>
               {item.label}

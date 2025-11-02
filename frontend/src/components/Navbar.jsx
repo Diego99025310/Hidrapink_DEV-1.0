@@ -36,38 +36,38 @@ export default function Navbar({ onToggleSidebar, sidebarOpen }) {
   const { user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 bg-slate-950/70 px-4 py-3 backdrop-blur">
+    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-brand-light bg-white/80 px-4 py-3 text-ink shadow-sm backdrop-blur">
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2 text-white transition hover:bg-white/10 md:hidden"
+          className="inline-flex items-center justify-center rounded-full border border-brand-light bg-white/70 p-2 text-brand transition hover:bg-brand/10 hover:text-brand md:hidden"
           aria-label="Alternar menu"
         >
           <IconMenu open={sidebarOpen} />
         </button>
-        <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-pink-200">
+        <div className="space-y-1">
+          <span className="inline-flex items-center gap-2 rounded-full bg-brand-light px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.32em] text-brand">
             HidraPink Influence Manager
-          </p>
-          <h1 className="text-lg font-semibold text-white">Central Operacional</h1>
+          </span>
+          <h1 className="font-display text-lg text-brand">Central Operacional</h1>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
         <div className="hidden text-right md:block">
-          <p className="text-xs uppercase tracking-[0.25em] text-white/60">Usuario</p>
-          <p className="text-sm font-medium text-white">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-brand/80">Usuário</p>
+          <p className="font-display text-lg text-ink">
             {user?.name || user?.nome || user?.email || "Hidra Pink"}
           </p>
-          <p className="text-xs text-white/50">
+          <p className="text-xs font-body text-ink/60">
             {user?.role === "master" ? "Master" : "Influenciadora"}
           </p>
         </div>
         <button
           type="button"
           onClick={logout}
-          className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-white hover:text-pink-700"
+          className="rounded-full bg-gradient-to-r from-brand via-brand-medium to-brand px-4 py-2 text-sm font-display uppercase tracking-[0.3em] text-white shadow-brand-soft transition hover:brightness-110"
         >
           Sair
         </button>

@@ -4,10 +4,10 @@ import { api } from "../lib/api.js";
 import Table from "../components/Table.jsx";
 
 const StatCard = ({ title, value, helper }) => (
-  <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-white/[0.03] to-transparent p-6 shadow-lg">
-    <p className="text-xs uppercase tracking-[0.35em] text-white/50">{title}</p>
-    <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
-    {helper ? <p className="mt-2 text-xs text-white/60">{helper}</p> : null}
+  <div className="rounded-3xl border border-brand-light bg-white/85 p-6 text-ink shadow-brand-soft">
+    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand">{title}</p>
+    <p className="mt-3 font-display text-4xl text-ink">{value}</p>
+    {helper ? <p className="mt-2 text-xs text-ink/70">{helper}</p> : null}
   </div>
 );
 
@@ -96,11 +96,9 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex min-h-full items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
-          <p className="text-xs uppercase tracking-[0.35em] text-white/60">
-            Carregando painel
-          </p>
+        <div className="flex flex-col items-center gap-3 text-brand">
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-ink/60">Carregando painel</p>
         </div>
       </div>
     );
@@ -108,7 +106,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-rose-400/40 bg-rose-500/10 p-8 text-center text-sm text-rose-100 shadow-lg">
+      <div className="rounded-3xl border border-brand-medium/60 bg-brand-medium/15 p-8 text-center text-sm text-brand shadow-brand-soft">
         {error}
       </div>
     );
@@ -125,29 +123,28 @@ export default function DashboardPage() {
     const influencers = masterData.influencers || [];
 
     return (
-      <div className="space-y-8">
-        <header className="rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-xl backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.45em] text-pink-200">Dashboard Master</p>
-          <div className="mt-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold text-white">
+      <div className="space-y-10 text-ink">
+        <header className="rounded-[2.75rem] border border-brand-light bg-white/90 p-8 shadow-brand">
+          <div className="flex flex-wrap items-center justify-between gap-6">
+            <div className="space-y-3">
+              <span className="inline-flex items-center gap-2 rounded-full bg-brand-light px-4 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-brand">
+                Dashboard Master
+              </span>
+              <h1 className="font-display text-4xl text-brand">
                 Olá, {user.email?.split("@")[0] || "Master"}.
               </h1>
-              <p className="mt-2 text-sm text-white/70">
-                Acompanhe os agendamentos, validações pendentes e performance das
-                influenciadoras neste ciclo.
+              <p className="max-w-xl text-sm text-ink/70">
+                Acompanhe os agendamentos, validações pendentes e performance das influenciadoras neste ciclo.
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
-              <span className="text-xs uppercase tracking-[0.35em] text-white/50">
-                Ciclo ativo
-              </span>
-              <p className="text-lg font-semibold text-white">{cycleLabel ?? "--/--"}</p>
+            <div className="rounded-3xl border border-brand-light bg-brand-light/60 px-6 py-4 text-right text-ink">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Ciclo ativo</p>
+              <p className="font-display text-2xl">{cycleLabel ?? "--/--"}</p>
             </div>
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-5 md:grid-cols-3">
           <StatCard
             title="Influenciadoras ativas"
             value={stats.totalInfluencers ?? 0}
@@ -168,8 +165,8 @@ export default function DashboardPage() {
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Validações pendentes</h2>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+              <h2 className="font-display text-xl text-brand">Validações pendentes</h2>
+              <p className="text-xs uppercase tracking-[0.3em] text-ink/50">
                 Aprovar ou reenviar stories
               </p>
             </div>
@@ -179,16 +176,16 @@ export default function DashboardPage() {
                   label: "Data",
                   key: "scheduled_date",
                   render: (row) => (
-                    <span className="font-medium text-white">{formatDate(row.scheduled_date)}</span>
+                    <span className="font-medium text-ink">{formatDate(row.scheduled_date)}</span>
                   ),
                 },
                 {
                   label: "Influenciadora",
                   key: "influencer_name",
                   render: (row) => (
-                    <div>
-                      <p className="font-medium text-white">{row.influencer_name}</p>
-                      <p className="text-xs text-white/60">{row.instagram}</p>
+                    <div className="space-y-1">
+                      <p className="font-medium text-ink">{row.influencer_name}</p>
+                      <p className="text-xs text-ink/60">{row.instagram}</p>
                     </div>
                   ),
                 },
@@ -196,7 +193,7 @@ export default function DashboardPage() {
                   label: "Status",
                   key: "status",
                   render: (row) => (
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">
+                    <span className="inline-flex rounded-full bg-brand-light/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                       {formatStatus(row.status)}
                     </span>
                   ),
@@ -209,8 +206,8 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Influenciadoras em destaque</h2>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+              <h2 className="font-display text-xl text-brand">Influenciadoras em destaque</h2>
+              <p className="text-xs uppercase tracking-[0.3em] text-ink/50">
                 Planejado x validado no ciclo
               </p>
             </div>
@@ -220,9 +217,9 @@ export default function DashboardPage() {
                   label: "Influenciadora",
                   key: "nome",
                   render: (row) => (
-                    <div>
-                      <p className="font-medium text-white">{row.nome}</p>
-                      <p className="text-xs text-white/60">{row.instagram}</p>
+                    <div className="space-y-1">
+                      <p className="font-medium text-ink">{row.nome}</p>
+                      <p className="text-xs text-ink/60">{row.instagram}</p>
                     </div>
                   ),
                 },
@@ -243,8 +240,8 @@ export default function DashboardPage() {
 
         <section className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">Agenda do ciclo</h2>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+            <h2 className="font-display text-xl text-brand">Agenda do ciclo</h2>
+            <p className="text-xs uppercase tracking-[0.3em] text-ink/50">
               Stories programados para todas as influenciadoras
             </p>
           </div>
@@ -259,9 +256,9 @@ export default function DashboardPage() {
                 label: "Influenciadora",
                 key: "influencer_name",
                 render: (row) => (
-                  <div>
-                    <p className="font-medium text-white">{row.influencer_name}</p>
-                    <p className="text-xs text-white/60">{row.instagram}</p>
+                  <div className="space-y-1">
+                    <p className="font-medium text-ink">{row.influencer_name}</p>
+                    <p className="text-xs text-ink/60">{row.instagram}</p>
                   </div>
                 ),
               },
@@ -274,7 +271,7 @@ export default function DashboardPage() {
                 label: "Status",
                 key: "status",
                 render: (row) => (
-                  <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/70">
+                  <span className="inline-flex rounded-full border border-brand-light px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                     {formatStatus(row.status)}
                   </span>
                 ),
@@ -301,30 +298,28 @@ export default function DashboardPage() {
       : [];
 
     return (
-      <div className="space-y-8">
-        <header className="rounded-3xl border border-white/10 bg-gradient-to-br from-pink-500/20 via-slate-900/40 to-slate-950/40 p-6 shadow-xl backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.45em] text-pink-200">
-            Dashboard Influenciadora
-          </p>
-          <div className="mt-4 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold text-white">
+      <div className="space-y-10 text-ink">
+        <header className="rounded-[2.75rem] border border-brand-light bg-white/90 p-8 shadow-brand">
+          <div className="flex flex-wrap items-center justify-between gap-6">
+            <div className="space-y-3">
+              <span className="inline-flex items-center gap-2 rounded-full bg-brand-light px-4 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-brand">
+                Dashboard Influenciadora
+              </span>
+              <h1 className="font-display text-4xl text-brand">
                 Olá, {influencerData.influencer?.nome || "criadora"}.
               </h1>
-              <p className="mt-2 text-sm text-white/70">
+              <p className="max-w-xl text-sm text-ink/70">
                 Mantenha seu calendário de stories em dia para potencializar sua comissão mensal.
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
-              <span className="text-xs uppercase tracking-[0.35em] text-white/50">
-                Ciclo ativo
-              </span>
-              <p className="text-lg font-semibold text-white">{cycleLabel ?? "--/--"}</p>
+            <div className="rounded-3xl border border-brand-light bg-brand-light/60 px-6 py-4 text-right text-ink">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Ciclo ativo</p>
+              <p className="font-display text-2xl">{cycleLabel ?? "--/--"}</p>
             </div>
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-5 md:grid-cols-3">
           <StatCard
             title="Dias planejados"
             value={progress.plannedDays ?? 0}
@@ -343,18 +338,18 @@ export default function DashboardPage() {
         </section>
 
         {nextPlan ? (
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
-            <p className="text-xs uppercase tracking-[0.35em] text-white/50">Próximo story</p>
-            <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-lg font-semibold text-white">
+          <section className="rounded-[2.25rem] border border-brand-light bg-white/85 p-6 text-ink shadow-brand-soft">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand">Próximo story</p>
+            <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-2">
+                <p className="font-display text-2xl text-brand">
                   {formatDate(nextPlan.scheduled_date)}
                 </p>
-                <p className="text-sm text-white/70">
+                <p className="text-sm text-ink/70">
                   {nextPlan.script_title ?? "Sem roteiro vinculado. Escolha um roteiro no Planner."}
                 </p>
               </div>
-              <span className="rounded-full border border-white/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white/80">
+              <span className="inline-flex rounded-full border border-brand-light px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-brand">
                 {formatStatus(nextPlan.status)}
               </span>
             </div>
@@ -364,8 +359,8 @@ export default function DashboardPage() {
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Agenda do ciclo</h2>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+              <h2 className="font-display text-xl text-brand">Agenda do ciclo</h2>
+              <p className="text-xs uppercase tracking-[0.3em] text-ink/50">
                 Stories planejados (clique no Planner para editar)
               </p>
             </div>
@@ -385,7 +380,7 @@ export default function DashboardPage() {
                   label: "Status",
                   key: "status",
                   render: (row) => (
-                    <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/70">
+                    <span className="inline-flex rounded-full border border-brand-light px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand">
                       {formatStatus(row.status)}
                     </span>
                   ),
@@ -398,15 +393,25 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Alertas</h2>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+              <h2 className="font-display text-xl text-brand">Alertas</h2>
+              <p className="text-xs uppercase tracking-[0.3em] text-ink/50">
                 Dias em atraso ou aguardando validação
               </p>
             </div>
             <Table
               columns={[
-                { label: "Data", key: "date", render: (row) => formatDate(row.date) },
-                { label: "Status", key: "status", render: (row) => formatStatus(row.status) },
+                {
+                  label: "Data",
+                  key: "date",
+                  render: (row) => <span className="font-medium text-ink">{formatDate(row.date)}</span>,
+                },
+                {
+                  label: "Status",
+                  key: "status",
+                  render: (row) => (
+                    <span className="font-semibold text-brand">{formatStatus(row.status)}</span>
+                  ),
+                },
               ]}
               data={alerts}
               emptyMessage="Tudo certo! Nenhum alerta pendente."
@@ -417,8 +422,8 @@ export default function DashboardPage() {
         <section className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Sugestões de roteiros</h2>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+              <h2 className="font-display text-xl text-brand">Sugestões de roteiros</h2>
+              <p className="text-xs uppercase tracking-[0.3em] text-ink/50">
                 Conteúdos recentes para inspirar seu próximo story
               </p>
             </div>
@@ -427,14 +432,14 @@ export default function DashboardPage() {
                 influencerData.suggestions.map((script) => (
                   <article
                     key={script.id}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/80"
+                    className="rounded-2xl border border-brand-light bg-white/85 p-4 text-sm text-ink/80 shadow-brand-soft"
                   >
-                    <h3 className="text-base font-semibold text-white">{script.titulo}</h3>
-                    <p className="mt-2 text-xs text-white/60">{script.descricao || "Sem descrição."}</p>
+                    <h3 className="font-display text-lg text-brand">{script.titulo}</h3>
+                    <p className="mt-2 text-xs text-ink/60">{script.descricao || "Sem descrição."}</p>
                   </article>
                 ))
               ) : (
-                <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
+                <p className="rounded-2xl border border-brand-light bg-white/85 p-4 text-sm text-ink/60 shadow-brand-soft">
                   Sem sugestões no momento. Utilize roteiros cadastrados pela equipe no Planner.
                 </p>
               )}
@@ -443,30 +448,30 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-semibold text-white">Histórico mensal</h2>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+              <h2 className="font-display text-xl text-brand">Histórico mensal</h2>
+              <p className="text-xs uppercase tracking-[0.3em] text-ink/50">
                 Pontuação validada nos últimos ciclos
               </p>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-inner">
-              <ul className="space-y-3 text-sm text-white/80">
+            <div className="rounded-3xl border border-brand-light bg-white/85 p-5 shadow-brand-soft">
+              <ul className="space-y-3 text-sm text-ink/80">
                 {history.length ? (
                   history.map((item) => (
                     <li
                       key={`${item.cycle_year}-${item.cycle_month}`}
-                      className="flex items-center justify-between gap-4 rounded-2xl bg-white/5 px-4 py-3"
+                      className="flex items-center justify-between gap-4 rounded-2xl bg-brand-light/50 px-4 py-3"
                     >
-                      <span className="font-medium text-white">
+                      <span className="font-display text-lg text-brand">
                         {String(item.cycle_month).padStart(2, "0")}/{item.cycle_year}
                       </span>
-                      <span className="text-white/60">
+                      <span className="text-ink/60">
                         {formatCurrency(item.total_commission ?? 0)} •{" "}
                         {item.validated_days ?? 0} dias validados
                       </span>
                     </li>
                   ))
                 ) : (
-                  <li className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/60">
+                  <li className="rounded-2xl bg-brand-light/40 px-4 py-3 text-sm text-ink/60">
                     Nenhum histórico disponível.
                   </li>
                 )}
