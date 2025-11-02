@@ -1,6 +1,8 @@
-import { prisma } from "../lib/prisma.js";
-
-export const VERSAO_TERMO_ATUAL = "1.0";
+import {
+  TERMO_VERSAO_ATUAL,
+  findLatestAcceptance,
+  getInfluencerByUserId,
+} from "../services/aceiteService.js";
 
 const shouldRespondWithJson = (req) => {
   const accept = (req.headers?.accept || "").toLowerCase();
@@ -28,22 +30,19 @@ const verificarAceite = async (req, res, next) => {
   }
 
   try {
-    const influencer = await prisma.influencer.findFirst({
-      where: { userId: user.id },
-      select: { contractSignatureWaived: true },
-    });
+    const influencer = await getInfluencerByUserId(user.id);
 
-    if (normalizeWaiver(influencer?.contractSignatureWaived)) {
+    if (!influencer) {
       return next();
     }
 
-    const acceptance = await prisma.termAcceptance.findFirst({
-      where: { userId: user.id },
-      orderBy: { acceptedAt: "desc" },
-      select: { termVersion: true },
-    });
+    if (normalizeWaiver(influencer.contractSignatureWaived)) {
+      return next();
+    }
 
-    if (!acceptance || acceptance.termVersion !== VERSAO_TERMO_ATUAL) {
+    const acceptance = await findLatestAcceptance(influencer.id, ["aceito"]);
+
+    if (!acceptance || acceptance.version !== TERMO_VERSAO_ATUAL) {
       if (shouldRespondWithJson(req)) {
         return res
           .status(428)

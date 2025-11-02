@@ -100,7 +100,7 @@ const masterItems = [
 const sharedItems = [
   {
     label: "Termos",
-    to: "/terms",
+    to: "/aceite-termos",
     icon: (
       <svg
         className="h-4 w-4"

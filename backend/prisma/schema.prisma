@@ -18,7 +18,6 @@ model User {
   createdAt          DateTime @default(now()) @map("created_at")
 
   influencer       Influencer?       @relation("InfluencerUser")
-  termAcceptances  TermAcceptance[]
   validatedStories StorySubmission[] @relation("StorySubmissionValidator")
   contentScripts   ContentScript[]   @relation("ContentScriptCreator")
 
@@ -75,6 +74,7 @@ model Influencer {
   contractSignatureCodeHash        String?   @map("contract_signature_code_hash")
   contractSignatureCodeGeneratedAt DateTime? @map("contract_signature_code_generated_at")
   contractSignatureWaived          Boolean   @default(false) @map("contract_signature_waived")
+  lastAcceptanceId Int? @map("last_acceptance_id") @unique
   userId                           Int?      @unique @map("user_id")
   createdAt                        DateTime  @default(now()) @map("created_at")
 
@@ -83,6 +83,8 @@ model Influencer {
   plans              InfluencerPlan[]
   storySubmissions   StorySubmission[]
   monthlyCommissions MonthlyCommission[]
+  termAcceptances    AceiteTermo[]
+  lastAcceptance     AceiteTermo?        @relation("LastAcceptance", fields: [lastAcceptanceId], references: [id])
 
   @@map("influenciadoras")
 }
@@ -137,20 +139,23 @@ model SkuPoint {
   @@map("sku_points")
 }
 
-model TermAcceptance {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @map("user_id")
-  termVersion String   @map("versao_termo")
-  termHash    String   @map("hash_termo")
-  acceptedAt  DateTime @map("data_aceite")
-  userIp      String?  @map("ip_usuario")
-  userAgent   String?  @map("user_agent")
-  authChannel String?  @default("token_email") @map("canal_autenticacao")
-  status      String?  @default("aceito")
+model AceiteTermo {
+  id            Int        @id @default(autoincrement())
+  influencerId  Int        @map("influencer_id")
+  version       String     @default("1.0") @map("version")
+  hashTermo     String     @map("hash_termo")
+  status        String     @default("aceito")
+  ipAddress     String?    @map("ip_address")
+  userAgent     String?    @map("user_agent")
+  canal         String?    @default("assinatura_simples")
+  documentHtml  String     @map("document_html") @db.Text
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  influencer     Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  lastInfluencer Influencer? @relation("LastAcceptance")
 
-  @@index([userId], name: "idx_aceite_termos_user")
+  @@index([influencerId], name: "idx_aceite_termos_influencer")
   @@map("aceite_termos")
 }
 

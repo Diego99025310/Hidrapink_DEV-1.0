@@ -36,6 +36,25 @@ export const generateRandomPassword = (length = 6) => {
   }).join("");
 };
 
+export const generateDefaultInfluencerPassword = (name, phone) => {
+  const rawName = trimString(name) || "";
+  const asciiName = rawName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z]/g, "")
+    .toLowerCase();
+  const letters = asciiName.slice(0, 3);
+
+  const digits = normalizeDigits(phone);
+  const suffix = digits.slice(-4);
+
+  if (letters.length < 3 || suffix.length < 4) {
+    return null;
+  }
+
+  return `${letters}${suffix}`;
+};
+
 export const parseCurrencyField = (value, fieldLabel) => {
   const num = Number(value);
   if (!Number.isFinite(num) || num < 0) {
@@ -73,7 +92,9 @@ export default {
   validators,
   extractUserPhoneData,
   generateRandomPassword,
+  generateDefaultInfluencerPassword,
   parseCurrencyField,
   parsePointsField,
   lowerCaseOrNull,
 };
+

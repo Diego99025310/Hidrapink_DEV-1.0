@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { findUserByEmail } from "./userService.js";
 import {
   extractUserPhoneData,
+  generateDefaultInfluencerPassword,
   generateRandomPassword,
   normalizeDigits,
   trimString,
@@ -338,7 +339,8 @@ export const createInfluencer = async (payload, options = {}) => {
     return { error: { error: "Senha de acesso deve ter ao menos 6 caracteres." } };
   }
 
-  const provisionalPassword = providedPassword || generateRandomPassword(6);
+  const defaultPassword = generateDefaultInfluencerPassword(data.name, data.contact);
+  const provisionalPassword = providedPassword || defaultPassword || generateRandomPassword(6);
   const passwordHash = await bcrypt.hash(provisionalPassword, 10);
 
   const phoneData = extractUserPhoneData(data.contact);

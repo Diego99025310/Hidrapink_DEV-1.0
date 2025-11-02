@@ -39,12 +39,17 @@ export function AuthProvider({ children }) {
     localStorage.setItem("user", JSON.stringify(user));
   }, [token, user]);
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     setLoading(true);
     setError(null);
 
     try {
-      const { data } = await api.post("/api/login", { email, password });
+      const payload = {
+        identifier: typeof identifier === "string" ? identifier.trim() : "",
+        password,
+      };
+
+      const { data } = await api.post("/api/login", payload);
       const tokenValue = data?.token ?? null;
       const userData = data?.user ?? null;
 

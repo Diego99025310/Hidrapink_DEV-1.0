@@ -20,7 +20,8 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/planner" element={<PlannerPage />} />
-          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/aceite-termos" element={<TermsPage />} />
+          <Route path="/terms" element={<Navigate to="/aceite-termos" replace />} />
 
           <Route element={<ProtectedRoute allowedRoles={["master"]} />}>
             <Route path="/sales" element={<SalesPage />} />

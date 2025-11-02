@@ -2,8 +2,9 @@ const statusStyles = {
   ativa: "border-emerald-300/40 bg-emerald-500/10 text-emerald-100",
   bloqueada: "border-rose-300/40 bg-rose-500/10 text-rose-100",
   pendente: "border-amber-300/40 bg-amber-500/10 text-amber-100",
-  completo: "border-emerald-300/40 bg-emerald-500/10 text-emerald-100",
+  aceito: "border-emerald-300/40 bg-emerald-500/10 text-emerald-100",
   dispensado: "border-sky-300/40 bg-sky-500/10 text-sky-100",
+  recusado: "border-rose-300/40 bg-rose-500/10 text-rose-100",
   desconhecido: "border-white/20 bg-white/5 text-white/70",
 };
 
@@ -45,9 +46,12 @@ const resolveAccountStatus = (influencer) => {
 };
 
 const resolveAcceptanceStatus = (influencer) => {
-  const status = (influencer.acceptanceStatus || "").toLowerCase();
-  if (status === "aceito" || status === "completo" || status === "accepted") {
-    return "completo";
+  const status = (influencer.acceptancestatus || influencer.acceptanceStatus || "").toLowerCase();
+  if (status === "aceito" || status === "accepted") {
+    return "aceito";
+  }
+  if (status === "recusado" || status === "rejeitado") {
+    return "recusado";
   }
   if (status === "dispensado" || status === "dispensada") {
     return "dispensado";
@@ -64,6 +68,7 @@ export default function InfluencerTable({
   onEdit,
   onDelete,
   onResetPassword,
+  onDownloadAcceptance,
 }) {
   if (loading) {
     return (
@@ -115,6 +120,20 @@ export default function InfluencerTable({
             {data.map((influencer) => {
               const accountStatus = resolveAccountStatus(influencer);
               const acceptanceStatus = resolveAcceptanceStatus(influencer);
+              const acceptanceLabel = (() => {
+                switch (acceptanceStatus) {
+                  case "aceito":
+                    return "Aceite completo";
+                  case "recusado":
+                    return "Recusado";
+                  case "dispensado":
+                    return "Dispensado";
+                  case "pendente":
+                    return "Aceite pendente";
+                  default:
+                    return "Desconhecido";
+                }
+              })();
 
               return (
                 <tr key={influencer.id} className="hover:bg-white/5 transition">
@@ -146,23 +165,34 @@ export default function InfluencerTable({
                     </span>
                   </td>
                   <td className="px-5 py-4 align-top">
-                    <span
-                      className={`inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.3em] ${statusStyles[acceptanceStatus] ?? statusStyles.desconhecido}`}
-                    >
-                      {acceptanceStatus === "completo"
-                        ? "Aceite completo"
-                        : acceptanceStatus === "dispensado"
-                          ? "Dispensado"
-                          : acceptanceStatus === "pendente"
-                            ? "Aceite pendente"
-                            : "Desconhecido"}
-                    </span>
+                    <div className="flex flex-col gap-2">
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.3em] ${statusStyles[acceptanceStatus] ?? statusStyles.desconhecido}`}
+                      >
+                        {acceptanceLabel}
+                      </span>
+                      {influencer.aceiteResumo?.createdAt ? (
+                        <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">
+                          Atualizado em{" "}
+                          {formatDate(influencer.aceiteResumo.createdAt)}
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-5 py-4 align-top text-xs text-white/60">
                     {formatDate(influencer.createdAt || influencer.created_at)}
                   </td>
                   <td className="px-5 py-4 align-top">
                     <div className="flex flex-wrap justify-end gap-2">
+                      {influencer.aceiteResumo?.downloadUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => onDownloadAcceptance?.(influencer)}
+                          className="rounded-full border border-emerald-300/40 px-3 py-1 text-xs text-emerald-100 hover:bg-emerald-500/10"
+                        >
+                          Baixar termo
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => onEdit?.(influencer)}

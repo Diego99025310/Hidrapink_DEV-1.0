@@ -34,13 +34,49 @@ const formatPhone = (value) => {
 
 const digitsLength = (value) => value.replace(/\D/g, "").length;
 
+const formatDateTime = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+};
+
+const ContractContent = ({ html }) => {
+  if (!html) {
+    return (
+      <p className="text-sm text-slate-300">
+        Termo ainda nao disponivel. Recarregue a pagina em instantes.
+      </p>
+    );
+  }
+
+  return (
+    <div
+      className="[&_h1]:text-pink-500 [&_h1]:text-3xl [&_h1]:font-semibold [&_h1]:text-center [&_h1]:uppercase [&_h2]:text-pink-400 [&_h2]:mt-6 [&_h3]:text-pink-300 [&_h3]:mt-5 [&_p]:text-sm [&_p]:text-slate-200 [&_li]:text-sm [&_strong]:text-pink-200"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+};
+
 export default function TermsAcceptancePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const apiBaseUrl = useMemo(() => {
+    const base = api.defaults.baseURL || "";
+    return base.endsWith("/") ? base.slice(0, -1) : base;
+  }, []);
 
   const [loading, setLoading] = useState(true);
   const [contract, setContract] = useState({ html: "", hash: "", version: "" });
-  const [status, setStatus] = useState({ accepted: false, waived: false, fetched: false });
+  const [status, setStatus] = useState({
+    accepted: false,
+    waived: false,
+    fetched: false,
+    summary: null,
+  });
   const [cpf, setCpf] = useState("");
   const [telefone, setTelefone] = useState("");
   const [agree, setAgree] = useState(false);
@@ -48,6 +84,7 @@ export default function TermsAcceptancePage() {
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
 
   const canSubmit = useMemo(() => {
     if (!agree) return false;
@@ -56,28 +93,72 @@ export default function TermsAcceptancePage() {
     return true;
   }, [agree, cpf, telefone]);
 
+  const resolveDownloadPath = useMemo(
+    () => (path) => {
+      if (!path) return null;
+      if (path.startsWith("http://") || path.startsWith("https://")) {
+        try {
+          const parsed = new URL(path);
+          return `${parsed.pathname}${parsed.search ?? ""}`;
+        } catch (error) {
+          return path;
+        }
+      }
+      return path;
+    },
+    [],
+  );
+
+  const handleDownload = async (path, filename = "termo-assinado.html") => {
+    if (!path) return;
+    try {
+      const resolved = resolveDownloadPath(path);
+      const { data } = await api.get(resolved, { responseType: "blob" });
+      const blobUrl = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (downloadError) {
+      setError(
+        downloadError.response?.data?.error ||
+          "Nao foi possivel baixar o comprovante. Tente novamente mais tarde.",
+      );
+    }
+  };
+
+  const fetchStatus = async () => {
+    const { data } = await api.get("/api/aceite/status");
+    setStatus({
+      accepted: Boolean(data?.accepted),
+      waived: Boolean(data?.waived),
+      fetched: true,
+      summary: data || null,
+    });
+    return data;
+  };
+
   useEffect(() => {
-    const loadData = async () => {
+    const init = async () => {
       if (!user || user.role !== "influencer") {
         setLoading(false);
         return;
       }
-      try {
-        const { data: statusData } = await api.get("/api/aceite/status");
-        const accepted = Boolean(statusData?.waived || statusData?.accepted);
-        setStatus({
-          accepted,
-          waived: Boolean(statusData?.waived),
-          fetched: true,
-        });
 
-        if (accepted) {
+      try {
+        const statusData = await fetchStatus();
+
+        if (statusData?.accepted || statusData?.waived) {
           setMessage({
             type: "success",
             text: statusData?.waived
-              ? "Seu acesso foi liberado pelo administrador. Voce pode usar o painel normalmente."
+              ? "Dispensa registrada. Voce pode acessar o painel normalmente."
               : "Termo de parceria aceito. Voce pode utilizar o painel normalmente.",
           });
+          setLoading(false);
           return;
         }
 
@@ -88,13 +169,7 @@ export default function TermsAcceptancePage() {
           version: contractData?.version ?? "",
         });
       } catch (requestError) {
-        if (requestError.response?.status === 428 && requestError.response?.data?.waived) {
-          setStatus({ accepted: true, waived: true, fetched: true });
-          setMessage({
-            type: "success",
-            text: "Dispensa registrada. Voce pode acessar o painel normalmente.",
-          });
-        } else if (requestError.response?.status === 401) {
+        if (requestError.response?.status === 401) {
           setError("Sessao expirada. Faca login novamente para continuar.");
         } else {
           setError(
@@ -107,8 +182,27 @@ export default function TermsAcceptancePage() {
       }
     };
 
-    loadData();
+    init();
   }, [user]);
+
+  const refreshStatusAndMessage = async () => {
+    try {
+      const summary = await fetchStatus();
+      if (summary?.accepted || summary?.waived) {
+        setMessage({
+          type: "success",
+          text: summary?.waived
+            ? "Dispensa registrada. Voce pode acessar o painel normalmente."
+            : "Termo de parceria aceito. Voce pode utilizar o painel normalmente.",
+        });
+      }
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.error ||
+          "Nao foi possivel atualizar o status do termo. Recarregue a pagina.",
+      );
+    }
+  };
 
   const handleConfirm = async () => {
     if (!canSubmit || submitting) return;
@@ -116,15 +210,11 @@ export default function TermsAcceptancePage() {
     setMessage(null);
     setError(null);
     try {
-      const { data } = await api.post("/api/aceite/confirmar", {
+      await api.post("/api/aceite/confirmar", {
         cpf,
         telefone,
       });
-      setStatus({ accepted: true, waived: false, fetched: true });
-      setMessage({
-        type: "success",
-        text: data?.message || "Aceite confirmado com sucesso. Redirecionando para o dashboard...",
-      });
+      await refreshStatusAndMessage();
       setTimeout(() => {
         navigate("/dashboard", { replace: true });
       }, 1200);
@@ -142,12 +232,11 @@ export default function TermsAcceptancePage() {
     setSubmitting(true);
     setError(null);
     try {
-      const { data } = await api.post("/api/aceite/rejeitar");
+      await api.post("/api/aceite/rejeitar");
       setShowRejectModal(false);
       setMessage({
         type: "info",
         text:
-          data?.message ||
           "Recusa registrada. Voce sera desconectada e nao podera usar o painel enquanto nao aceitar o termo.",
       });
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -180,9 +269,11 @@ export default function TermsAcceptancePage() {
     return <div className="loading-screen">Carregando termo...</div>;
   }
 
+  const summary = status.summary;
+
   return (
-    <div className="space-y-8">
-      <header className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
+    <div className="space-y-8 px-4 pb-16 pt-4 md:px-8">
+      <header className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur-md">
         <p className="text-xs uppercase tracking-[0.35em] text-white/40">Termo de parceria</p>
         <h1 className="mt-3 text-2xl font-semibold text-white">
           Leia com atencao e confirme seus dados para assinar
@@ -196,7 +287,7 @@ export default function TermsAcceptancePage() {
 
       {message ? (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
+          className={`rounded-2xl border px-4 py-3 text-sm backdrop-blur-md ${
             message.type === "success"
               ? "border-emerald-300/40 bg-emerald-500/15 text-emerald-100"
               : "border-sky-300/40 bg-sky-500/10 text-sky-100"
@@ -207,24 +298,58 @@ export default function TermsAcceptancePage() {
       ) : null}
 
       {error ? (
-        <div className="rounded-2xl border border-rose-300/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+        <div className="rounded-2xl border border-rose-300/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100 backdrop-blur-md">
           {error}
         </div>
       ) : null}
 
+      {status.accepted && summary?.downloadUrl ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() =>
+              handleDownload(
+                summary.downloadUrl,
+                `termo-${summary.acceptanceId ?? "hidrapink"}.html`,
+              )
+            }
+            className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-white/20"
+          >
+            Baixar comprovante
+          </button>
+          {summary.hash ? (
+            <span className="self-center text-xs text-white/60">
+              Hash SHA-256: <span className="break-all text-white/80">{summary.hash}</span>
+            </span>
+          ) : null}
+          {summary.createdAt ? (
+            <span className="self-center text-xs text-white/60">
+              Assinado em {formatDateTime(summary.createdAt)}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       {!status.accepted ? (
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur">
-          <div className="max-h-[60vh] overflow-y-auto rounded-2xl border border-white/10 bg-white/95 p-6 text-slate-900 shadow-inner">
-            {contract.html ? (
-              <div dangerouslySetInnerHTML={{ __html: contract.html }} />
-            ) : (
-              <p className="text-sm text-slate-600">
-                Termo ainda nao disponivel. Recarregue a pagina em instantes.
-              </p>
-            )}
+        <section className="rounded-3xl border border-white/10 bg-slate-950/60 p-6 shadow-2xl backdrop-blur-md">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <p className="text-xs uppercase tracking-[0.25em] text-white/40">
+              Leia o contrato e confirme seus dados antes de prosseguir.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowContractModal(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-white transition hover:border-white/40 hover:bg-white/10"
+            >
+              Visualizar em tela cheia
+            </button>
           </div>
 
-          <div className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-sm text-white/80">
+          <div className="mt-4 max-h-[60vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-900/90 p-6 text-sm leading-relaxed text-slate-100 shadow-inner">
+            <ContractContent html={contract.html} />
+          </div>
+
+          <div className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-sm text-white/80">
             <label className="flex items-start gap-3">
               <input
                 type="checkbox"
@@ -324,6 +449,21 @@ export default function TermsAcceptancePage() {
           loadingLabel: "Registrando...",
         }}
       />
+
+      <Modal
+        isOpen={showContractModal}
+        onClose={() => setShowContractModal(false)}
+        title="Contrato de parceria"
+        description="Visualizacao completa do termo vigente."
+        primaryAction={{
+          label: "Fechar",
+          onClick: () => setShowContractModal(false),
+        }}
+      >
+        <div className="max-h-[75vh] overflow-y-auto rounded-2xl border border-white/10 bg-slate-900/95 p-6 text-sm leading-relaxed text-slate-100 shadow-inner">
+          <ContractContent html={contract.html} />
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -6,14 +6,22 @@ const readFileContent = (filePath) => {
   return buffer.toString("utf8");
 };
 
+export const hashContent = (content) => {
+  if (typeof content !== "string" || !content.length) {
+    throw new Error("Conteudo do termo invalido para hash.");
+  }
+  return crypto.createHash("sha256").update(content, "utf8").digest("hex");
+};
+
 export const gerarHashTermo = (filePath) => {
   if (!filePath) {
     throw new Error("Caminho do termo nao informado.");
   }
   const content = readFileContent(filePath);
-  return crypto.createHash("sha256").update(content).digest("hex");
+  return hashContent(content);
 };
 
 export default {
   gerarHashTermo,
+  hashContent,
 };

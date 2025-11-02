@@ -1,18 +1,63 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+
+const sanitizeIdentifier = (value) => {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const containsLetters = /[A-Za-z]/.test(trimmed);
+  if (trimmed.includes("@") || containsLetters) {
+    return trimmed.toLowerCase();
+  }
+  return trimmed.replace(/\D/g, "");
+};
+
+const formatPhoneInput = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) {
+    return `(${digits}`;
+  }
+  const area = digits.slice(0, 2);
+  if (digits.length <= 6) {
+    return `(${area}) ${digits.slice(2)}`;
+  }
+  if (digits.length <= 10) {
+    const middle = digits.slice(2, digits.length - 4);
+    const end = digits.slice(-4);
+    return `(${area}) ${middle}-${end}`;
+  }
+  const middle = digits.slice(2, 7);
+  const end = digits.slice(7);
+  return `(${area}) ${middle}-${end}`;
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, loading, error, setError } = useAuth();
-  const [formState, setFormState] = useState({
-    email: "",
-    password: "",
-  });
+  const [identifierInput, setIdentifierInput] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormState((prev) => ({ ...prev, [name]: value }));
+  const isEmailMode = useMemo(() => {
+    if (!identifierInput) return false;
+    return identifierInput.includes("@") || /[A-Za-z]/.test(identifierInput);
+  }, [identifierInput]);
+
+  const handleIdentifierChange = (event) => {
+    const { value } = event.target;
+    if (isEmailMode || value.includes("@") || /[A-Za-z]/.test(value)) {
+      setIdentifierInput(value.trimStart());
+    } else {
+      setIdentifierInput(formatPhoneInput(value));
+    }
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handlePasswordChange = (event) => {
+    setPassword(event.target.value);
     if (error) {
       setError(null);
     }
@@ -20,8 +65,19 @@ export default function LoginPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    const identifier = sanitizeIdentifier(identifierInput);
+    if (!identifier) {
+      setError("Informe email ou celular.");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Informe a senha.");
+      return;
+    }
+
     try {
-      await login(formState.email, formState.password);
+      await login(identifier, password);
       navigate("/dashboard");
     } catch (authError) {
       console.error(authError);
@@ -45,8 +101,8 @@ export default function LoginPage() {
               .
             </h1>
             <p className="mt-6 max-w-xl text-base text-white/70 lg:text-lg">
-              Faça login para acompanhar performance, programar roteiros e gerenciar vendas.
-              O painel integra todos os fluxos operacionais da HidraPink em um só lugar.
+              Faca login para acompanhar performance, programar roteiros e gerenciar vendas. O
+              painel integra todos os fluxos operacionais da HidraPink em um unico lugar.
             </p>
           </div>
 
@@ -70,24 +126,25 @@ export default function LoginPage() {
               </span>
               <h2 className="text-2xl font-semibold text-white">Entrar no painel</h2>
               <p className="text-xs text-white/60">
-                Digite seu e-mail corporativo e senha cadastrada.
+                Informe seu e-mail corporativo ou celular com DDD e a senha cadastrada.
               </p>
             </header>
 
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-white/80" htmlFor="email">
-                  E-mail corporativo
+                <label className="block text-sm font-medium text-white/80" htmlFor="identifier">
+                  E-mail ou celular
                 </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  autoComplete="username"
+                  inputMode={isEmailMode ? "email" : "tel"}
                   className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white shadow-inner transition focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-400/50"
-                  placeholder="voce@hidrapink.com"
-                  value={formState.email}
-                  onChange={handleChange}
+                  placeholder="usuario@hidrapink.com ou (11) 98888-7777"
+                  value={identifierInput}
+                  onChange={handleIdentifierChange}
                   required
                 />
               </div>
@@ -102,9 +159,9 @@ export default function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white shadow-inner transition focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-400/50"
-                  placeholder="••••••"
-                  value={formState.password}
-                  onChange={handleChange}
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={handlePasswordChange}
                   required
                 />
               </div>
@@ -125,7 +182,8 @@ export default function LoginPage() {
             </form>
 
             <p className="mt-6 text-center text-xs text-white/50">
-              Ao acessar você concorda com os termos de confidencialidade e uso interno da HidraPink.
+              Ao acessar voce concorda com os termos de confidencialidade e uso interno da
+              HidraPink.
             </p>
           </div>
         </section>

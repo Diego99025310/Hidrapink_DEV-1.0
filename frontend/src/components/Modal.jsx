@@ -37,7 +37,9 @@ export default function Modal({
           ) : null}
         </div>
 
-        <div className="px-6 py-5 text-sm text-white/80">{children}</div>
+        <div className="max-h-[70vh] overflow-y-auto px-6 py-5 text-sm text-white/80">
+          {children}
+        </div>
 
         {showActions && (primaryAction || secondaryAction || onClose) && (
           <div className="flex flex-wrap items-center justify-end gap-3 border-t border-white/10 px-6 py-4">
@@ -52,11 +54,19 @@ export default function Modal({
             ) : null}
 
             <button
-              type="button"
+              type={primaryAction?.type ?? "button"}
+              form={primaryAction?.form}
               onClick={primaryAction?.onClick ?? onClose}
-              className="rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white shadow transition hover:bg-pink-400"
+              disabled={primaryAction?.disabled}
+              className={`rounded-full px-5 py-2 text-sm font-semibold text-white shadow transition ${
+                primaryAction?.disabled
+                  ? "bg-pink-500/40 cursor-not-allowed"
+                  : "bg-pink-500 hover:bg-pink-400"
+              }`}
             >
-              {primaryAction?.label ?? "Fechar"}
+              {primaryAction?.loading
+                ? primaryAction?.loadingLabel ?? "Carregando..."
+                : primaryAction?.label ?? "Fechar"}
             </button>
           </div>
         )}

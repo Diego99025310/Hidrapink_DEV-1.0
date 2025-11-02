@@ -30,12 +30,21 @@ const normalizeInfluencer = (item = {}) => ({
   telefone: item.contact ?? item.contato ?? "",
   cpf: item.cpf ?? "",
   cupom: item.coupon ?? item.cupom ?? "",
+  cep: item.cep ?? "",
+  numero: item.numero ?? "",
+  complemento: item.complemento ?? "",
+  logradouro: item.logradouro ?? "",
+  bairro: item.bairro ?? "",
+  cidade: item.cidade ?? "",
+  estado: item.estado ?? "",
   createdAt: item.createdAt ?? item.created_at ?? "",
   status: item.status ?? item.accountStatus ?? null,
   contractSignatureWaived:
     item.contractSignatureWaived ?? item.contract_signature_waived ?? false,
   contractSignatureCodeHash:
     item.contractSignatureCodeHash ?? item.contract_signature_code_hash ?? null,
+  acceptancestatus: "desconhecido",
+  aceiteResumo: null,
 });
 
 export default function InfluencersPage() {
@@ -48,34 +57,72 @@ export default function InfluencersPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [alert, setAlert] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [credentials, setCredentials] = useState(null);
+  const formId = editing ? "influencer-edit-form" : "influencer-create-form";
 
   const endpoints = useMemo(() => endpointConfigs[endpointKey], [endpointKey]);
+  const apiBaseUrl = useMemo(() => {
+    const base = api.defaults.baseURL || "";
+    return base.endsWith("/") ? base.slice(0, -1) : base;
+  }, []);
 
-  const resolveAcceptancestatuses = useMemo(
-    () => async (list) => {
-      if (!list.length) { setAnalysisLoading(false); return list; }
+  const resolveAcceptancestatuses = useMemo(() => {
+    const mapStatus = (summary) => {
+      if (!summary) return "desconhecido";
+      if (summary.waived) return "dispensado";
+      if (!summary.acceptanceId) return "pendente";
+      const normalized = (summary.status || "").toLowerCase();
+      if (normalized === "aceito" || normalized === "accepted") return "aceito";
+      if (normalized === "recusado" || normalized === "rejeitado") return "recusado";
+      return "desconhecido";
+    };
+
+    return async (list) => {
+      if (!list.length) {
+        setAnalysisLoading(false);
+        return list;
+      }
       setAnalysisLoading(true);
       const updated = await Promise.all(
         list.map(async (item) => {
           if (item.contractSignatureWaived) {
-            return { ...item, acceptancestatus: "dispensado" };
+            const summary = {
+              waived: true,
+              status: "dispensado",
+              acceptanceId: null,
+              downloadUrl: null,
+              createdAt: null,
+            };
+            return { ...item, acceptancestatus: "dispensado", aceiteResumo: summary };
           }
           try {
-            await api.get(`/api/contrato-assinado/influenciadora/${item.id}`);
-            return { ...item, acceptancestatus: "completo" };
+            const { data } = await api.get(`/api/aceite/influenciadora/${item.id}/resumo`);
+            return {
+              ...item,
+              acceptancestatus: mapStatus(data),
+              aceiteResumo: data,
+            };
           } catch (error) {
             if (error.response?.status === 404) {
-              return { ...item, acceptancestatus: "pendente" };
+              return {
+                ...item,
+                acceptancestatus: "pendente",
+                aceiteResumo: null,
+              };
             }
-            return { ...item, acceptancestatus: "desconhecido" };
+            console.error(error);
+            return {
+              ...item,
+              acceptancestatus: "desconhecido",
+              aceiteResumo: null,
+            };
           }
         }),
       );
       setAnalysisLoading(false);
       return updated;
-    },
-    [],
-  );
+    };
+  }, []);
 
   useEffect(() => {
     if (user?.role !== "master") {
@@ -119,11 +166,13 @@ export default function InfluencersPage() {
 
   const openCreateModal = () => {
     setEditing(null);
+    setCredentials(null);
     setModalOpen(true);
   };
 
   const openEditModal = (record) => {
     setEditing(record);
+    setCredentials(null);
     setModalOpen(true);
   };
 
@@ -135,6 +184,15 @@ export default function InfluencersPage() {
       contato: values.telefone?.trim(),
       cpf: values.cpf?.trim(),
       cupom: values.cupom?.trim(),
+      cep: values.cep?.trim(),
+      numero: values.numero?.trim(),
+      complemento: values.complemento?.trim() || "",
+      logradouro: values.logradouro?.trim(),
+      bairro: values.bairro?.trim(),
+      cidade: values.cidade?.trim(),
+      estado: values.estado?.trim()?.toUpperCase(),
+      dispensaAssinatura: Boolean(values.dispensaAssinatura),
+      contractSignatureWaived: Boolean(values.dispensaAssinatura),
     };
 
     if (!isEdit) {
@@ -143,6 +201,10 @@ export default function InfluencersPage() {
 
     if (values.senha?.trim()) {
       payload.password = values.senha.trim();
+    }
+
+    if (payload.cupom) {
+      payload.cupom = payload.cupom.toUpperCase();
     }
 
     return payload;
@@ -162,21 +224,43 @@ export default function InfluencersPage() {
   const handleSubmit = async (values) => {
     setFormLoading(true);
     setAlert(null);
+    if (!editing) {
+      setCredentials(null);
+    }
     const payload = buildPayload(values, Boolean(editing));
 
     try {
       if (editing) {
         await api.put(endpoints.update(editing.id), payload);
         setAlert({ type: "success", text: "Influenciadora atualizada com sucesso." });
+        setCredentials(null);
       } else {
         const { data } = await api.post(endpoints.create, payload);
         const passwordInfo =
-          data?.senha_provisoria ?? data?.provisionalPassword ?? values.senha?.trim() ?? "";
+          data?.senha_provisoria ??
+          data?.provisionalPassword ??
+          values.senha?.trim() ??
+          "";
+        const loginIdentifier =
+          data?.loginEmail ?? payload.loginEmail ?? values.email?.trim() ?? "";
+        const signatureCode = data?.signatureCode ?? data?.codigoAssinatura ?? null;
+        const baseOrigin =
+          typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+        const normalizedOrigin = baseOrigin.endsWith("/")
+          ? baseOrigin.slice(0, -1)
+          : baseOrigin;
         setAlert({
           type: "success",
-          text: passwordInfo
-            ? `Influenciadora cadastrada com sucesso. Senha provisoria: ${passwordInfo}`
-            : "Influenciadora cadastrada com sucesso.",
+          text: "Influenciadora cadastrada com sucesso.",
+        });
+        setCredentials({
+          name: values.nome?.trim() ?? "",
+          email: loginIdentifier,
+          provisionalPassword: passwordInfo || null,
+          signatureCode,
+          waived: Boolean(values.dispensaAssinatura),
+          loginUrl: `${normalizedOrigin}/login`,
+          contractUrl: `${normalizedOrigin}/aceite-termos`,
         });
       }
       closeModal();
@@ -258,6 +342,48 @@ export default function InfluencersPage() {
     }
   };
 
+  const resolveDownloadPath = useMemo(
+    () => (path) => {
+      if (!path) return null;
+      if (path.startsWith("http://") || path.startsWith("https://")) {
+        try {
+          const parsed = new URL(path);
+          return `${parsed.pathname}${parsed.search ?? ""}`;
+        } catch (error) {
+          return path;
+        }
+      }
+      return path;
+    },
+    [],
+  );
+
+  const handleDownloadAcceptance = async (record) => {
+    const path = record.aceiteResumo?.downloadUrl;
+    if (!path) return;
+    try {
+      const resolved = resolveDownloadPath(path);
+      const { data } = await api.get(resolved, { responseType: "blob" });
+      const blobUrl = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement("a");
+      const slug =
+        record.instagram?.replace(/[^a-zA-Z0-9_-]/g, "") || record.nome?.replace(/\s+/g, "-") || "termo";
+      link.href = blobUrl;
+      link.download = `termo-${slug}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (downloadError) {
+      setAlert({
+        type: "error",
+        text:
+          downloadError.response?.data?.error ||
+          "Nao foi possivel baixar o termo assinado. Tente novamente mais tarde.",
+      });
+    }
+  };
+
   if (user?.role !== "master") {
     return (
       <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center text-sm text-white/70">
@@ -303,6 +429,91 @@ export default function InfluencersPage() {
         </div>
       ) : null}
 
+      {credentials ? (
+        <section className="space-y-4 rounded-3xl border border-emerald-300/40 bg-emerald-500/10 p-6 text-sm text-emerald-100">
+          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-emerald-200">
+                Credenciais geradas
+              </p>
+              <h2 className="text-xl font-semibold text-white">
+                Compartilhe com {credentials.name || "a influenciadora"}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCredentials(null)}
+              className="inline-flex items-center rounded-full border border-emerald-200/30 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-50 transition hover:border-emerald-200/50 hover:bg-emerald-500/20"
+            >
+              Ocultar
+            </button>
+          </div>
+
+          <dl className="grid gap-3 text-sm text-emerald-50">
+            <div className="grid gap-1 md:grid-cols-[160px_1fr] md:items-center">
+              <dt className="text-xs uppercase tracking-[0.25em] text-emerald-200">Login</dt>
+              <dd className="font-semibold text-white">{credentials.email}</dd>
+            </div>
+            <div className="grid gap-1 md:grid-cols-[160px_1fr] md:items-center">
+              <dt className="text-xs uppercase tracking-[0.25em] text-emerald-200">
+                Senha provisoria
+              </dt>
+              <dd className="font-semibold text-white">
+                {credentials.provisionalPassword
+                  ? credentials.provisionalPassword
+                  : "Gerada automaticamente pelo sistema."}
+              </dd>
+            </div>
+            {credentials.signatureCode && !credentials.waived ? (
+              <div className="grid gap-1 md:grid-cols-[160px_1fr] md:items-center">
+                <dt className="text-xs uppercase tracking-[0.25em] text-emerald-200">
+                  Codigo de assinatura
+                </dt>
+                <dd className="font-semibold text-white">{credentials.signatureCode}</dd>
+              </div>
+            ) : null}
+            {credentials.waived ? (
+              <div className="grid gap-1 md:grid-cols-[160px_1fr] md:items-center">
+                <dt className="text-xs uppercase tracking-[0.25em] text-emerald-200">
+                  Assinatura
+                </dt>
+                <dd className="text-emerald-100">
+                  Dispensa registrada. A influenciadora acessara o painel sem assinar o termo.
+                </dd>
+              </div>
+            ) : null}
+            <div className="grid gap-1 md:grid-cols-[160px_1fr] md:items-center">
+              <dt className="text-xs uppercase tracking-[0.25em] text-emerald-200">
+                Acesso ao painel
+              </dt>
+              <dd>
+                <a
+                  href={credentials.loginUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-white underline decoration-emerald-200/60 underline-offset-4 transition hover:decoration-emerald-100"
+                >
+                  {credentials.loginUrl}
+                </a>
+              </dd>
+            </div>
+            <div className="grid gap-1 md:grid-cols-[160px_1fr] md:items-center">
+              <dt className="text-xs uppercase tracking-[0.25em] text-emerald-200">Contrato</dt>
+              <dd>
+                <a
+                  href={credentials.contractUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-white underline decoration-emerald-200/60 underline-offset-4 transition hover:decoration-emerald-100"
+                >
+                  {credentials.contractUrl}
+                </a>
+              </dd>
+            </div>
+          </dl>
+        </section>
+      ) : null}
+
       {analysisLoading && (
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/60">
           Atualizando status de aceite...
@@ -315,6 +526,7 @@ export default function InfluencersPage() {
         onEdit={openEditModal}
         onDelete={handleDelete}
         onResetPassword={handleResetPassword}
+        onDownloadAcceptance={handleDownloadAcceptance}
       />
 
       <Modal
@@ -323,13 +535,21 @@ export default function InfluencersPage() {
         title={editing ? "Editar influenciadora" : "Cadastrar influenciadora"}
         description={
           editing
-            ? "Atualize os dados cadastrais. Caso informe uma nova senha, ela substituiraa atual imediatamente."
-            : "Preencha os dados da nova influenciadora. Uma senha provisoria pode ser informada ou gerada automaticamente."
+            ? "Atualize os dados cadastrais, endereco e status de assinatura. Caso informe nova senha, ela substituira a atual imediatamente."
+            : "Preencha informacoes basicas, endereco e preferencia de assinatura. Se deixar a senha em branco, o sistema gera uma senha padrao automaticamente."
         }
         secondaryAction={{ label: "Cancelar", onClick: closeModal }}
-        showActions={false}
+        primaryAction={{
+          label: editing ? "Salvar alteracoes" : "Cadastrar",
+          loading: formLoading,
+          loadingLabel: "Salvando...",
+          disabled: formLoading,
+          form: formId,
+          type: "submit",
+        }}
       >
         <InfluencerForm
+          formId={formId}
           initialData={editing}
           onSubmit={handleSubmit}
           loading={formLoading}
