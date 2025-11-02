@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>HidraPink Influence Manager · Prévia visual</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --pink-primary: #e4447a;
+        --pink-medium: #f07999;
+        --pink-light: #fbd3db;
+        --ink: #431022;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Inter", "Qurova Light", system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #f9f5f7;
+        color: #2f2933;
+        line-height: 1.5;
+        padding: 2.5rem;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        font-family: "Agency FB", "Bebas Neue", "Inter", sans-serif;
+        letter-spacing: 0.04em;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        text-transform: uppercase;
+        margin-bottom: 2rem;
+        color: var(--pink-primary);
+      }
+
+      h2 {
+        font-size: 1.75rem;
+        margin-bottom: 1.5rem;
+        color: var(--ink);
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        margin-bottom: 0.75rem;
+        color: #7f7a84;
+      }
+
+      section {
+        margin-bottom: 4rem;
+      }
+
+      .preview-grid {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      }
+
+      .screen {
+        border-radius: 32px;
+        overflow: hidden;
+        box-shadow: 0 28px 50px -30px rgba(20, 11, 29, 0.45);
+        position: relative;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .screen::before {
+        content: attr(data-label);
+        position: absolute;
+        top: 16px;
+        left: 20px;
+        padding: 0.35rem 0.85rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        border-radius: 999px;
+        font-weight: 600;
+        z-index: 2;
+      }
+
+      .screen.before::before {
+        background: rgba(15, 20, 40, 0.65);
+        color: #f8f9ff;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      .screen.after::before {
+        background: var(--pink-light);
+        color: var(--pink-primary);
+        border: 1px solid rgba(228, 68, 122, 0.35);
+      }
+
+      .screen > div {
+        min-height: 420px;
+        display: flex;
+      }
+
+      /* Login */
+      .login-before {
+        background: radial-gradient(circle at top, rgba(228, 68, 122, 0.45), transparent 60%),
+          linear-gradient(140deg, #0b0218, #12071f 45%, #201237 95%);
+        color: #ffffff;
+      }
+
+      .login-before .column {
+        flex: 1;
+        padding: 3.5rem 3rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 2.5rem;
+      }
+
+      .login-before .support {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 28px;
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(16px);
+      }
+
+      .login-before .form-card {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 32px;
+        background: rgba(12, 9, 28, 0.6);
+        padding: 2.5rem;
+        box-shadow: 0 25px 50px -25px rgba(10, 4, 24, 0.9);
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      .login-before input,
+      .login-before button {
+        border-radius: 20px;
+        padding: 0.85rem 1.2rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(20, 16, 35, 0.65);
+        color: inherit;
+        font-family: inherit;
+      }
+
+      .login-before button {
+        background: linear-gradient(90deg, #f472b6, #ec4899, #f472b6);
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+      }
+
+      .login-after {
+        background: radial-gradient(circle at top, rgba(228, 68, 122, 0.12), transparent 60%),
+          linear-gradient(145deg, #fbd3db, #ffffff 45%, rgba(240, 121, 153, 0.1) 100%);
+        color: var(--ink);
+      }
+
+      .login-after .column {
+        flex: 1;
+        padding: 4rem 3.75rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 3rem;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 1rem;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .chip.primary {
+        background: rgba(228, 68, 122, 0.12);
+        color: var(--pink-primary);
+      }
+
+      .chip.solid {
+        background: var(--pink-primary);
+        color: #fff;
+      }
+
+      .login-after .support {
+        border-radius: 32px;
+        border: 1px solid var(--pink-light);
+        background: rgba(255, 255, 255, 0.7);
+        padding: 1.75rem;
+        box-shadow: 0 35px 60px -20px rgba(228, 68, 122, 0.25);
+      }
+
+      .login-after .form-card {
+        border: 1px solid var(--pink-light);
+        border-radius: 40px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 3rem;
+        box-shadow: 0 35px 60px -20px rgba(240, 121, 153, 0.35);
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
+      }
+
+      .login-after label {
+        font-weight: 600;
+        color: var(--pink-primary);
+        font-size: 0.82rem;
+      }
+
+      .login-after input {
+        border-radius: 24px;
+        border: 1px solid var(--pink-light);
+        padding: 0.9rem 1.25rem;
+        font-family: inherit;
+      }
+
+      .login-after button {
+        border: none;
+        border-radius: 24px;
+        padding: 1rem 1.5rem;
+        font-family: "Agency FB", "Bebas Neue", sans-serif;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: white;
+        font-size: 0.85rem;
+        cursor: pointer;
+        background: linear-gradient(90deg, var(--pink-primary), var(--pink-medium), var(--pink-primary));
+        box-shadow: 0 25px 45px -20px rgba(228, 68, 122, 0.45);
+      }
+
+      /* Shared dashboard layout */
+      .dashboard-before,
+      .dashboard-after {
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
+        padding: 2.5rem;
+        width: 100%;
+      }
+
+      .dashboard-before {
+        background: linear-gradient(160deg, rgba(9, 8, 20, 0.95), rgba(18, 12, 30, 0.85));
+        color: #fff;
+      }
+
+      .dashboard-after {
+        background: linear-gradient(150deg, rgba(255, 255, 255, 0.95), rgba(251, 211, 219, 0.45));
+        color: var(--ink);
+      }
+
+      .hero-card.before {
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.06);
+        padding: 2rem;
+        backdrop-filter: blur(18px);
+        box-shadow: 0 20px 45px -25px rgba(10, 4, 30, 0.8);
+      }
+
+      .hero-card.after {
+        border-radius: 36px;
+        border: 1px solid var(--pink-light);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 2.5rem;
+        box-shadow: 0 30px 80px -25px rgba(228, 68, 122, 0.35);
+      }
+
+      .stat-row {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .stat-row.three {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      }
+
+      .stat-card.before {
+        border-radius: 28px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        padding: 1.5rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      }
+
+      .stat-card.after {
+        border-radius: 32px;
+        border: 1px solid var(--pink-light);
+        background: rgba(255, 255, 255, 0.85);
+        padding: 1.75rem;
+        box-shadow: 0 22px 55px -30px rgba(240, 121, 153, 0.45);
+      }
+
+      .badge {
+        display: inline-flex;
+        font-size: 0.65rem;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        font-weight: 600;
+        padding: 0.35rem 0.8rem;
+        border-radius: 999px;
+      }
+
+      .badge.before {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .badge.after {
+        background: rgba(251, 211, 219, 0.6);
+        color: var(--pink-primary);
+        border: 1px solid var(--pink-light);
+      }
+
+      .history.before {
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1.75rem;
+      }
+
+      .history.after {
+        border-radius: 34px;
+        border: 1px solid var(--pink-light);
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(251, 211, 219, 0.4));
+        padding: 2rem;
+      }
+
+      .history ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 1rem;
+      }
+
+      .history li {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .history .dot {
+        width: 0.65rem;
+        height: 0.65rem;
+        border-radius: 999px;
+        margin-top: 0.45rem;
+      }
+
+      .history.before .dot {
+        background: #f472b6;
+      }
+
+      .history.after .dot {
+        background: var(--pink-primary);
+      }
+
+      .sidebar-layout {
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .sidebar {
+        width: 220px;
+        border-radius: 28px;
+        padding: 1.75rem;
+      }
+
+      .sidebar.before {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(14, 16, 34, 0.85);
+      }
+
+      .sidebar.after {
+        border: 1px solid var(--pink-light);
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--ink);
+      }
+
+      .main-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .nav.before {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(8, 10, 26, 0.85);
+        padding: 1rem 1.5rem;
+      }
+
+      .nav.after {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 28px;
+        border: 1px solid var(--pink-light);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1.25rem 2rem;
+        box-shadow: 0 20px 45px -25px rgba(228, 68, 122, 0.35);
+      }
+
+      .nav.after .logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--pink-primary);
+        font-size: 1.35rem;
+      }
+
+      .nav.after .logo-mark {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--pink-primary), var(--pink-medium));
+        display: grid;
+        place-items: center;
+        color: white;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+      }
+
+      .button-soft {
+        border-radius: 999px;
+        padding: 0.6rem 1.4rem;
+        border: 1px solid var(--pink-light);
+        background: rgba(251, 211, 219, 0.5);
+        color: var(--pink-primary);
+        font-size: 0.7rem;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .nav.after .profile {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 999px;
+        border: 1px solid var(--pink-light);
+        padding: 0.35rem 0.9rem;
+        background: white;
+        box-shadow: 0 18px 40px -30px rgba(228, 68, 122, 0.45);
+      }
+
+      .avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--pink-primary), var(--pink-medium));
+      }
+
+      .nav.before .profile-text,
+      .nav.after .profile-text {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+      }
+
+      .link {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        font-size: 0.85rem;
+        padding: 0.75rem 1rem;
+        border-radius: 18px;
+        letter-spacing: 0.05em;
+      }
+
+      .sidebar.before .link {
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .sidebar.before .link.active {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+      }
+
+      .sidebar.after .link {
+        color: rgba(67, 16, 34, 0.6);
+      }
+
+      .sidebar.after .link.active {
+        background: linear-gradient(120deg, var(--pink-primary), var(--pink-medium));
+        color: #fff;
+        box-shadow: 0 25px 45px -25px rgba(228, 68, 122, 0.45);
+      }
+
+      .table-preview {
+        display: grid;
+        gap: 0.75rem;
+        font-size: 0.82rem;
+      }
+
+      .table-preview .row {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 0.8fr;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .pill {
+        display: inline-flex;
+        padding: 0.25rem 0.9rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+      }
+
+      .pill.before {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .pill.after {
+        background: rgba(251, 211, 219, 0.6);
+        color: var(--pink-primary);
+        border: 1px solid var(--pink-light);
+      }
+
+      footer {
+        margin-top: 5rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: rgba(67, 16, 34, 0.5);
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>HidraPink · Prévia visual (Antes × Depois)</h1>
+
+    <section>
+      <h2>Página de Login</h2>
+      <div class="preview-grid">
+        <article class="screen before" data-label="Antes">
+          <div class="login-before">
+            <div class="column">
+              <div>
+                <h3>HidraPink Influence Manager</h3>
+                <h2 style="color: #fff; font-size: 2.6rem; letter-spacing: 0; text-transform: none;">
+                  Transforme resultados com a sua rede de influenciadoras.
+                </h2>
+                <p style="color: rgba(255, 255, 255, 0.7); max-width: 24rem;">
+                  Faça login para acompanhar performance, programar roteiros e gerenciar vendas. O painel integra todos os fluxos operacionais da HidraPink.
+                </p>
+              </div>
+              <div class="support">
+                <div class="badge before">Suporte</div>
+                <p style="color: rgba(255, 255, 255, 0.75);">
+                  Esqueceu suas credenciais? Abra um chamado no canal #hidrapink-suporte ou envie e-mail para suporte@hidrapink.com.
+                </p>
+              </div>
+            </div>
+            <div class="column" style="justify-content: center;">
+              <div class="form-card">
+                <div class="badge before" style="align-self: center;">Acesso restrito</div>
+                <div>
+                  <h2 style="color: #fff; font-size: 1.8rem; letter-spacing: 0; text-transform: none;">Entrar no painel</h2>
+                  <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
+                    Informe seu e-mail corporativo ou celular com DDD e a senha cadastrada.
+                  </p>
+                </div>
+                <div>
+                  <label>E-mail ou celular</label>
+                  <input type="text" placeholder="usuario@hidrapink.com" />
+                </div>
+                <div>
+                  <label>Senha</label>
+                  <input type="password" placeholder="Digite sua senha" />
+                </div>
+                <button>Entrar</button>
+                <p style="font-size: 0.7rem; color: rgba(255, 255, 255, 0.55); text-align: center;">
+                  Ao acessar você concorda com os termos internos da HidraPink.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen after" data-label="Depois">
+          <div class="login-after">
+            <div class="column">
+              <div>
+                <span class="chip primary">HidraPink Influence Manager</span>
+                <h2 style="font-size: 3rem; color: var(--pink-primary); text-transform: none;">
+                  Potencialize sua rede de influenciadoras
+                </h2>
+                <p style="max-width: 26rem; font-family: 'Qurova Light', 'Inter', sans-serif; color: rgba(67, 16, 34, 0.7);">
+                  Faça login para planejar conteúdos, acompanhar performance e reforçar o protagonismo das parceiras HidraPink.
+                </p>
+              </div>
+              <div class="support">
+                <div class="badge after">Suporte</div>
+                <p style="font-family: 'Qurova Light', 'Inter', sans-serif;">
+                  Esqueceu as credenciais? Fale no canal #hidrapink-suporte ou envie e-mail para <strong>suporte@hidrapink.com</strong>.
+                </p>
+              </div>
+            </div>
+            <div class="column" style="justify-content: center;">
+              <div class="form-card">
+                <span class="chip solid">Acesso restrito</span>
+                <div>
+                  <h2 style="font-size: 2.1rem; color: var(--pink-primary); text-transform: none;">Entrar no painel</h2>
+                  <p style="font-size: 0.8rem; font-family: 'Qurova Light', 'Inter', sans-serif; color: rgba(67, 16, 34, 0.65);">
+                    Use seu e-mail corporativo ou celular com DDD e senha cadastrada.
+                  </p>
+                </div>
+                <div>
+                  <label>E-mail ou celular</label>
+                  <input type="text" placeholder="usuario@hidrapink.com" />
+                </div>
+                <div>
+                  <label>Senha</label>
+                  <input type="password" placeholder="Digite sua senha" />
+                </div>
+                <button>Entrar</button>
+                <p style="font-size: 0.75rem; text-align: center; font-family: 'Qurova Light', 'Inter', sans-serif; color: rgba(67, 16, 34, 0.6);">
+                  Ao acessar você concorda com os termos de confidencialidade HidraPink.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Dashboard Master</h2>
+      <div class="preview-grid">
+        <article class="screen before" data-label="Antes">
+          <div class="dashboard-before">
+            <div class="hero-card before">
+              <div class="badge before">Dashboard Master</div>
+              <h2 style="color: #fff; font-size: 2.2rem; text-transform: none;">Olá, Master.</h2>
+              <p style="color: rgba(255, 255, 255, 0.65); max-width: 32rem;">
+                Acompanhe os agendamentos, validações pendentes e performance das influenciadoras neste ciclo.
+              </p>
+              <div style="margin-top: 2rem; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.12); padding: 1.2rem; width: max-content;">
+                <div class="badge before" style="margin-bottom: 0.5rem;">Ciclo ativo</div>
+                <p style="font-size: 1.5rem;">03/2024</p>
+              </div>
+            </div>
+            <div class="stat-row three">
+              <div class="stat-card before">
+                <div class="badge before">Influenciadoras ativas</div>
+                <p style="font-size: 2.5rem; font-weight: 700;">24</p>
+                <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.85rem;">Com agenda neste ciclo mensal.</p>
+              </div>
+              <div class="stat-card before">
+                <div class="badge before">Stories planejados</div>
+                <p style="font-size: 2.5rem; font-weight: 700;">68</p>
+                <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.85rem;">23 já validados</p>
+              </div>
+              <div class="stat-card before">
+                <div class="badge before">Validações pendentes</div>
+                <p style="font-size: 2.5rem; font-weight: 700;">12</p>
+                <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.85rem;">5 atrasos sinalizados</p>
+              </div>
+            </div>
+            <div class="history before">
+              <div class="badge before" style="margin-bottom: 1rem;">Validações pendentes</div>
+              <div class="table-preview">
+                <div class="row">
+                  <span>07 mar 2024</span>
+                  <span>Bruna Costa</span>
+                  <span class="pill before">Programado</span>
+                </div>
+                <div class="row">
+                  <span>08 mar 2024</span>
+                  <span>Ana Lima</span>
+                  <span class="pill before">Validado</span>
+                </div>
+                <div class="row">
+                  <span>10 mar 2024</span>
+                  <span>Joyce Ferreira</span>
+                  <span class="pill before">Pendente</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen after" data-label="Depois">
+          <div class="dashboard-after">
+            <div class="hero-card after">
+              <span class="chip primary">Dashboard Master</span>
+              <h2 style="font-size: 2.6rem; color: var(--pink-primary); text-transform: none;">Olá, Master</h2>
+              <p style="font-family: 'Qurova Light', 'Inter', sans-serif; color: rgba(67, 16, 34, 0.7); max-width: 32rem;">
+                Monitore agendas, validações e performance com insights em tempo real.
+              </p>
+              <div style="margin-top: 2rem; display: inline-flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; border-radius: 28px; border: 1px solid var(--pink-light); background: rgba(251, 211, 219, 0.6); padding: 1.2rem 1.6rem;">
+                <span class="chip primary" style="background: rgba(228, 68, 122, 0.08);">Ciclo ativo</span>
+                <p style="font-size: 2.2rem; color: var(--ink); font-family: 'Agency FB', 'Bebas Neue', sans-serif;">03/2024</p>
+              </div>
+            </div>
+            <div class="stat-row three">
+              <div class="stat-card after">
+                <div class="badge after">Influenciadoras ativas</div>
+                <p style="font-size: 2.8rem; color: var(--ink); font-family: 'Agency FB', 'Bebas Neue', sans-serif;">24</p>
+                <p style="font-size: 0.9rem; font-family: 'Qurova Light', 'Inter', sans-serif; color: rgba(67, 16, 34, 0.65);">Com agenda neste ciclo mensal.</p>
+              </div>
+              <div class="stat-card after">
+                <div class="badge after">Stories planejados</div>
+                <p style="font-size: 2.8rem; color: var(--ink); font-family: 'Agency FB', 'Bebas Neue', sans-serif;">68</p>
+                <p style="font-size: 0.9rem; font-family: 'Qurova Light', 'Inter', sans-serif; color: rgba(67, 16, 34, 0.65);">23 já validados</p>
+              </div>
+              <div class="stat-card after">
+                <div class="badge after">Validações pendentes</div>
+                <p style="font-size: 2.8rem; color: var(--ink); font-family: 'Agency FB', 'Bebas Neue', sans-serif;">12</p>
+                <p style="font-size: 0.9rem; font-family: 'Qurova Light', 'Inter', sans-serif; color: rgba(67, 16, 34, 0.65);">5 atrasos sinalizados</p>
+              </div>
+            </div>
+            <div class="history after">
+              <span class="chip primary" style="align-self: flex-start;">Validações pendentes</span>
+              <div class="table-preview" style="font-family: 'Qurova Light', 'Inter', sans-serif;">
+                <div class="row">
+                  <span>07 mar 2024</span>
+                  <span><strong>Bruna Costa</strong> · @brunapink</span>
+                  <span class="pill after">Programado</span>
+                </div>
+                <div class="row">
+                  <span>08 mar 2024</span>
+                  <span><strong>Ana Lima</strong> · @anapink</span>
+                  <span class="pill after" style="background: rgba(240, 121, 153, 0.25);">Validado</span>
+                </div>
+                <div class="row">
+                  <span>10 mar 2024</span>
+                  <span><strong>Joyce Ferreira</strong> · @joycepink</span>
+                  <span class="pill after" style="background: rgba(228, 68, 122, 0.18); color: var(--pink-primary);">Pendente</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Dashboard Influenciadora</h2>
+      <div class="preview-grid">
+        <article class="screen before" data-label="Antes">
+          <div class="dashboard-before">
+            <div class="hero-card before" style="display: grid; gap: 1.25rem;">
+              <div class="badge before">Meta do ciclo</div>
+              <p style="font-size: 0.95rem; color: rgba(255, 255, 255, 0.75);">
+                Alcance previsto, stories agendados e pontos estimados.
+              </p>
+              <div class="stat-row three">
+                <div class="stat-card before" style="background: rgba(255, 255, 255, 0.02);">
+                  <p style="font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255, 255, 255, 0.5);">Stories</p>
+                  <p style="font-size: 2rem; font-weight: 700;">12</p>
+                </div>
+                <div class="stat-card before" style="background: rgba(255, 255, 255, 0.02);">
+                  <p style="font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255, 255, 255, 0.5);">Pontos</p>
+                  <p style="font-size: 2rem; font-weight: 700;">860</p>
+                </div>
+                <div class="stat-card before" style="background: rgba(255, 255, 255, 0.02);">
+                  <p style="font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255, 255, 255, 0.5);">Validados</p>
+                  <p style="font-size: 2rem; font-weight: 700;">9</p>
+                </div>
+              </div>
+            </div>
+            <div class="history before">
+              <div class="badge before" style="margin-bottom: 1rem;">Termos & próximos passos</div>
+              <ul>
+                <li>
+                  <span class="dot"></span>
+                  <span>Último aceite: 15 fev 2024</span>
+                </li>
+                <li>
+                  <span class="dot"></span>
+                  <span>Próximo story: 09 mar 2024 às 18h</span>
+                </li>
+                <li>
+                  <span class="dot"></span>
+                  <span>Status do planner: aguardando validação</span>
+                </li>
+              </ul>
+              <button style="margin-top: 1.75rem; border-radius: 999px; padding: 0.8rem 1.8rem; background: rgba(228, 68, 122, 0.85); color: #fff; border: none; letter-spacing: 0.25em; text-transform: uppercase; font-size: 0.7rem; font-weight: 600;">
+                Acessar planner
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen after" data-label="Depois">
+          <div class="dashboard-after">
+            <div class="hero-card after" style="display: grid; gap: 1.5rem;">
+              <h2 style="font-size: 2.3rem; color: var(--pink-primary); text-transform: none;">Meta do ciclo</h2>
+              <p style="font-family: 'Qurova Light', 'Inter', sans-serif; color: rgba(67, 16, 34, 0.7);">
+                Alcance previsto, stories agendados e pontos estimados.
+              </p>
+              <div class="stat-row three">
+                <div class="stat-card after" style="background: rgba(251, 211, 219, 0.55);">
+                  <p style="font-size: 0.75rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--pink-primary);">Stories</p>
+                  <p style="font-size: 2.4rem; font-family: 'Agency FB', 'Bebas Neue', sans-serif; color: var(--ink);">12</p>
+                </div>
+                <div class="stat-card after" style="background: rgba(251, 211, 219, 0.35);">
+                  <p style="font-size: 0.75rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--pink-primary);">Pontos</p>
+                  <p style="font-size: 2.4rem; font-family: 'Agency FB', 'Bebas Neue', sans-serif; color: var(--ink);">860</p>
+                </div>
+                <div class="stat-card after" style="background: rgba(255, 255, 255, 0.9);">
+                  <p style="font-size: 0.75rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--pink-primary);">Validados</p>
+                  <p style="font-size: 2.4rem; font-family: 'Agency FB', 'Bebas Neue', sans-serif; color: var(--ink);">9</p>
+                </div>
+              </div>
+            </div>
+            <div class="history after">
+              <h3 style="color: var(--pink-primary); letter-spacing: 0.28em;">Termos & próximos passos</h3>
+              <ul style="font-family: 'Qurova Light', 'Inter', sans-serif;">
+                <li>
+                  <span class="dot"></span>
+                  <span>Último aceite: 15 fev 2024</span>
+                </li>
+                <li>
+                  <span class="dot" style="background: var(--pink-medium);"></span>
+                  <span>Próximo story: 09 mar 2024 às 18h</span>
+                </li>
+                <li>
+                  <span class="dot" style="background: rgba(228, 68, 122, 0.7);"></span>
+                  <span>Status do planner: aguardando validação</span>
+                </li>
+              </ul>
+              <button style="margin-top: 2rem; border-radius: 999px; padding: 0.85rem 2.2rem; background: linear-gradient(120deg, var(--pink-primary), var(--pink-medium)); color: #fff; border: none; letter-spacing: 0.25em; text-transform: uppercase; font-size: 0.75rem; font-family: 'Agency FB', 'Bebas Neue', sans-serif; box-shadow: 0 25px 45px -20px rgba(228, 68, 122, 0.4);">
+                Acessar planner
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Navbar + Sidebar (Contexto Dashboard)</h2>
+      <div class="preview-grid">
+        <article class="screen before" data-label="Antes">
+          <div class="dashboard-before" style="gap: 1rem;">
+            <div class="nav before">
+              <span style="font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255, 255, 255, 0.7);">HidraPink</span>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(244, 114, 182, 0.8);"></div>
+                <div class="profile-text" style="color: rgba(255, 255, 255, 0.6);">Master</div>
+              </div>
+            </div>
+            <div class="sidebar-layout">
+              <aside class="sidebar before">
+                <div class="link active">Dashboard</div>
+                <div class="link">Planner</div>
+                <div class="link">Influenciadoras</div>
+                <div class="link">Vendas</div>
+                <div class="link">Termos</div>
+              </aside>
+              <div class="main-panel" style="border-radius: 28px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(9, 10, 26, 0.65); padding: 2rem; min-height: 260px;"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen after" data-label="Depois">
+          <div class="dashboard-after" style="gap: 1rem;">
+            <div class="nav after">
+              <div class="logo">
+                <div class="logo-mark">HP</div>
+                HidraPink
+              </div>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <button class="button-soft">Central de ajuda</button>
+                <div class="profile">
+                  <div class="avatar"></div>
+                  <div>
+                    <div style="font-size: 0.8rem; font-weight: 600; color: var(--pink-primary);">Bruna Master</div>
+                    <div class="profile-text" style="color: rgba(67, 16, 34, 0.55);">Master</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sidebar-layout">
+              <aside class="sidebar after">
+                <div class="link active">Dashboard</div>
+                <div class="link">Planner</div>
+                <div class="link">Influenciadoras</div>
+                <div class="link">Vendas</div>
+                <div class="link">Termos</div>
+              </aside>
+              <div class="main-panel" style="border-radius: 32px; border: 1px solid var(--pink-light); background: rgba(255, 255, 255, 0.94); padding: 2.25rem; min-height: 260px;"></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <footer>Visualizações simuladas · Baseadas na estrutura atual do frontend React</footer>
+  </body>
+</html>
